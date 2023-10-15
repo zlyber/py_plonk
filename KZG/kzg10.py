@@ -34,8 +34,7 @@ class Commitment:
     def __init__(self,value):
         self.value = value
     @classmethod
-    def commit(cls,powers,polynomial:list[field],hiding_bound):
-        params = polynomial[0].params
+    def commit(cls,powers,polynomial:list[field],hiding_bound,params):
         num_leading_zeros, plain_coeffs = skip_leading_zeros_and_convert_to_bigints(polynomial)
         commitment:ProjectivePointG1 = MSM(
             powers[0][num_leading_zeros:],
@@ -49,7 +48,7 @@ class Commitment:
         random_ints = convert_to_bigints(randomness.blind_poly)
         random_commitment:ProjectivePointG1 = MSM(powers[1],random_ints,params)
         random_commitment_affine = random_commitment.to_affine()
-        commitment.add_assign_mixed(random_commitment_affine)
+        commitment = commitment.add_assign_mixed(random_commitment_affine)
         commitment_affine = commitment.to_affine()
         return Commitment(value=commitment_affine),randomness
     
@@ -104,7 +103,7 @@ class LabeledPoly:
         return cls(label=label, hiding_bound=hiding_bound, poly=poly)
 
 
-def commit_poly(ck:UniversalParams,polys):
+def commit_poly(ck:UniversalParams,polys,params):
     random.seed(42)
     randomness = []
     labeled_comm = []
@@ -115,7 +114,7 @@ def commit_poly(ck:UniversalParams,polys):
 
         powers = [ck.powers_of_g,ck.powers_of_gamma_g]
 
-        comm,rand = Commitment.commit(powers,polynomial,hiding_bound)
+        comm,rand = Commitment.commit(powers,polynomial,hiding_bound,params)
         labeled_comm.append(LabeledCommitment.new(label,comm))
         randomness.append(rand)
     return labeled_comm,randomness

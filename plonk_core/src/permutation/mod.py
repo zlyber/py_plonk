@@ -52,10 +52,10 @@ def compute_permutation_poly(domain, wires, beta:field, gamma, sigma_polys):
     ks = [field.zero(params),constants.K1(params),constants.K2(params),constants.K3(params)]
     sigma_mappings = [[],[],[],[]]
 
-    sigma_mappings[0] = NTT(domain,sigma_polys[0])
-    sigma_mappings[1] = NTT(domain,sigma_polys[1])
-    sigma_mappings[2] = NTT(domain,sigma_polys[2])
-    sigma_mappings[3] = NTT(domain,sigma_polys[3])
+    sigma_mappings[0] = NTT(domain,sigma_polys[0],params)
+    sigma_mappings[1] = NTT(domain,sigma_polys[1],params)
+    sigma_mappings[2] = NTT(domain,sigma_polys[2],params)
+    sigma_mappings[3] = NTT(domain,sigma_polys[3],params)
 
     # Transpose wires and sigma values to get "rows" in the form [wl_i,
     # wr_i, wo_i, ... ] where each row contains the wire and sigma

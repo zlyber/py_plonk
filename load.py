@@ -8,7 +8,7 @@ from plonk_core.src.proof_system.widget.lookup import Lookup
 from plonk_core.src.proof_system.permutation import Permutation
 def parse_bigint(s):
     start = s.find('"(') + 2
-    end = s.find(')"')
+    end = s.find(')')
     bigint_str = s[start:end]
     return gmpy2.mpz(bigint_str,16)
 
@@ -313,12 +313,12 @@ def read_scalar_data(filename):
     big_list = []
 
     # 如果第一个元素不符合正则表达式，手动添加到大列表
-    if content.startswith('[Fp256'):
-        str_list=content.split('[Fp256(BigInteger256(')[1].split(')')[0]
+    if content.startswith('Fp256'):
+        str_list=content.split('Fp256(BigInteger256(')[1].split(')')[0]
         element_str = str_list.strip('[]')
         elements = [gmpy2.mpz(e) for e in element_str.split(',')]
         combined_value = 0
-        for u64_element in elements:
+        for u64_element in reversed(elements):
             combined_value = (combined_value << 64) | u64_element
         big_list.append(gmpy2.mpz(combined_value))
 
@@ -332,7 +332,7 @@ def read_scalar_data(filename):
         # 将元素列表作为子列表追加到大列表中
         # 将元素列表合并成一个256位整数
         combined_value = 0
-        for u64_element in elements:
+        for u64_element in reversed(elements):
             combined_value = (combined_value << 64) | u64_element
         big_list.append(gmpy2.mpz(combined_value))
     return big_list

@@ -59,8 +59,8 @@ def resize(self, target_len, padding):
         res.extend([padding for _ in range(num_to_pad)])
     return res
 
-def distribute_powers(coeffs:list[field], g):
-    g_field = field(g,coeffs[0].params)
+def distribute_powers(coeffs:list[field], g, params):
+    g_field = field(g,params)
     one = g_field.one()
     distribute_powers_and_mul_by_const(coeffs, g_field, one)
 
@@ -91,12 +91,12 @@ def skip_leading_zeros_and_convert_to_bigints(p: list[field]):
     coeffs = convert_to_bigints(p[num_leading_zeros:])
     return num_leading_zeros, coeffs
 
-def NTT(domain,coeffs):
-    if type(coeffs[0])!=field:
+def NTT(domain,coeffs,params):
+    zero = field.zero(params)
+    if coeffs and type(coeffs[0])!=field:
         for i in range(len(coeffs)):
             coeffs[i]=field(coeffs[i],domain.group_gen.params)
     #add zero to resize
-    zero = field.zero(coeffs[0].params)
     resize_coeffs = resize(coeffs,domain.size,zero)
     evals = operator(domain,resize_coeffs,domain.group_gen)
     return evals
@@ -114,20 +114,20 @@ def INTT(domain,evals):
     return evals
 
 # Compute a NTT over a coset of the domain, modifying the input vector in place.
-def coset_NTT(coeffs:list[field], domain):
-    distribute_powers(coeffs, coeffs[0].params.GENERATOR)
-    evals = NTT(domain,coeffs)
+def coset_NTT(coeffs:list[field], domain, params):
+    distribute_powers(coeffs, params.GENERATOR, params)
+    evals = NTT(domain,coeffs,params)
     return evals
 
 # Compute a INTT over a coset of the domain, modifying the input vector in place.
-def coset_INTT(coeffs:list[field], domain):
-    distribute_powers(coeffs, coeffs[0].params.GENERATOR)
+def coset_INTT(coeffs:list[field], domain, params):
+    distribute_powers(coeffs, coeffs[0].params.GENERATOR, params)
     evals = INTT(domain,coeffs)
     return evals
 
 def from_coeff_vec(coeffs:list):
     result = coeffs[:]
-    while result and result[-1]==0:
+    while result and result[-1].value == 0:
         result.pop()
     return result
 
@@ -301,33 +301,35 @@ def MSM(bases:list[AffinePointG1], scalars:list[field], params):
     window_sums = []
     for w_start in window_starts:
         res = zero
-        buckets = [zero] * ((1 << c) - 1)
+        buckets = [zero for _ in range((1 << c) - 1)]
 
-        for scalar, base in scalars_and_bases_iter:
+        for org_scalar, org_base in scalars_and_bases_iter:
+            scalar = copy.copy(org_scalar)
+            base = copy.copy(org_base)
             if scalar.value == fr_one:
                 if w_start == 0:
-                    res.add_assign_mixed(base)
+                    res = res.add_assign_mixed(base)
             else:
                 # We right-shift by w_start, thus getting rid of the lower bits
                 scalar.value >>= w_start
                 # We mod the remaining bits by 2^{window size}, thus taking `c` bits.
                 scalar.value %= (1 << c)
                 if scalar.value != 0:
-                    buckets[scalar.value - 1].add_assign_mixed(base)
+                    buckets[scalar.value - 1] = buckets[scalar.value - 1].add_assign_mixed(base)
 
         running_sum:ProjectivePointG1 = ProjectivePointG1.zero(fq_elem)
         for b in reversed(buckets):
-            running_sum.add_assign(b)
-            res.add_assign(running_sum)
+            running_sum = running_sum.add_assign(b)
+            res = res.add_assign(running_sum)
 
         window_sums.append(res)
 
     lowest = window_sums[0]
 
-    total:ProjectivePointG1 = lowest
-    for sum_i in window_sums[1:]:
-        total.add_assign(sum_i)
+    total:ProjectivePointG1 = zero
+    for sum_i in reversed(window_sums[1:]):
+        total = total.add_assign(sum_i)
         for _ in range(c):
-            total.double()
-
+            total = total.double()
+    total = lowest.add_assign(total)
     return total

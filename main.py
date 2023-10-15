@@ -29,14 +29,7 @@ if __name__ == "__main__":
                         lookup_table=csdata["lookup_table"],zero_var=csdata["zero_var"])
 
     
-    # num1 = 6613806504683796440
-    # num2 = 11073656695919314959
-    # num3 = 18102478225614246908
-    # num4 = 18446744060824649731
-
-    # result = (num1 << 192) | (num2 << 128) | (num3 << 64) | num4
-
-    # print(gmpy2.mpz(result))
+    
     transcript_init = b"Merkle tree"
     preprocessed_transcript = transcript.Transcript.new(transcript_init)
     start_time = time.time()

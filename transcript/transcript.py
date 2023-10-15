@@ -24,8 +24,7 @@ class Transcript:
 
     @classmethod
     def new(cls,label):
-        transcript = cls(strobe.Strobe128.new(label))
-        
+        transcript = cls(strobe.Strobe128.new(MERLIN_PROTOCOL_LABEL))
         transcript.append_message(b"dom-sep", label)
         return transcript
 
@@ -36,14 +35,14 @@ class Transcript:
         self.strobe.ad(message, False)
     
     def append_pi(self, label):
-        pi_bytes = [1, 0, 0, 0, 0, 0, 0, 0, 71, 2, 0, 0, 0, 0, 0, 0, 82, 191,
-                35, 180, 253, 41, 234, 31, 4, 73, 155, 72, 94, 212, 172,
-                124, 207, 219, 65, 15, 224, 32, 4, 1, 62, 81, 27, 153, 65, 130, 61, 100]
+        pi_bytes = [1, 0, 0, 0, 0, 0, 0, 0, 71, 2, 0, 0, 0, 0, 0, 0, 175, 183, 188, 23, 25,
+                    155, 195, 172, 246, 232, 114, 89, 255, 117, 123, 226, 161, 86, 112, 46,
+                    124, 69, 74, 38, 91, 197, 152, 114, 132, 231, 67, 72]
         self.append_message(label,pi_bytes)
     
     def append(self,label,item):
         bytes = []
-        item.serialize(bytes)
+        bytes = item.serialize(bytes)
         self.append_message(label,bytes)
     
     def challenge_bytes(self, label, dest):

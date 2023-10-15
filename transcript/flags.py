@@ -39,16 +39,17 @@ class SWFlags(Flags):
     @classmethod
     def from_y_sign(cls,is_positive:bool):
         if is_positive:
-            return cls(PositiveY)
+            return cls(flag = PositiveY)
         else:
-            return cls(NegativeY)
+            return cls(flag = NegativeY)
         
-    @classmethod
     def u8_bitmask(self):
         mask = 0
-        if self is SWFlags(Infinity):
+        #infinity
+        if self.flag == Infinity:
             mask |= 1 << 6
-        elif self is SWFlags(PositiveY):
+        #positive
+        elif self.flag == PositiveY:
             mask |= 1 << 7
         return mask
 

@@ -20,11 +20,12 @@ class AffinePointG1:
     @classmethod
     def zero(cls,params):
         x=field.zero(params)
-        y=field.zero(params)
+        y=x.one()
         return cls(x,y)
     
     def is_zero(self):
-        return self.x.value == 0 and self.y.value == 0
+        one = self.x.one()
+        return self.x.value == 0 and self.y.value == one.value
     
     def serialize(self,writer):
         if self.is_zero():
@@ -34,7 +35,9 @@ class AffinePointG1:
             return writer
         else:
             neg_y = self.y.neg()
-            flag = flags.SWFlags.from_y_sign(self.y.value > neg_y.value)
+            a = self.y.into_repr()
+            b = neg_y.into_repr()
+            flag = flags.SWFlags.from_y_sign(a > b)
             writer = self.x.serialize_with_flags(writer, flag)
             return writer
 @dataclass

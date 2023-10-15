@@ -129,7 +129,6 @@ class Strobe128:
         st = bytearray([0] * 200)
         st[0:6] = [1, STROBE_R + 2, 1, 0, 1, 96]
         st[6:18] = b"STROBEv1.0.2"
-
         # Simulate the keccak::f1600 function
         st=transmute_state(st)
         st=keccak_p(st,KECCAK_F_ROUND_COUNT)
@@ -138,7 +137,7 @@ class Strobe128:
         strobe.meta_ad(protocol_label, False)
 
         return strobe
-    
+
     def run_f(self):
         self.state[self.pos] ^= self.pos_begin
         self.state[self.pos + 1] ^= 0x04
@@ -185,7 +184,6 @@ class Strobe128:
         self.cur_flags = flags
 
         self.absorb([old_begin, flags])
-
         # Force running F if C or K is set
         force_f = (flags & (FLAG_C | FLAG_K)) != 0
 

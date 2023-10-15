@@ -33,7 +33,7 @@ class Radix2EvaluationDomain:
         assert group_gen_pow.value == params.one()
 
         size_as_field_element=field.from_repr(size,params)
-        size_inv = field.inverse(size,params)
+        size_inv = field.inverse(size_as_field_element,params)
         group_gen_inv = field.inverse(group_gen,params)
         generator_inv = field.inverse(params.multiplicative_generator(),params)
 
