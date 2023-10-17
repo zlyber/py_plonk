@@ -28,7 +28,7 @@ class Randomness:
         return cls(blind_poly = rand_poly(hiding_poly_degree, params))
     
     def add_assign(self, f:field, other: 'Randomness'):
-        poly_add_poly_mul_const(self.blind_poly, f, other.blind_poly)
+        self.blind_poly = poly_add_poly_mul_const(self.blind_poly, f, other.blind_poly)
 
 class Commitment:
     def __init__(self,value):
@@ -73,7 +73,7 @@ def open(
 
     for polynomial, rand in zip(labeled_polynomials, rands):
 
-        poly_add_poly_mul_const(combined_polynomial,curr_challenge, polynomial.poly)
+        combined_polynomial = poly_add_poly_mul_const(combined_polynomial,curr_challenge, polynomial.poly)
         combined_rand.add_assign(curr_challenge, rand)
         curr_challenge = opening_challenges(opening_challenge, opening_challenge_counter)
         opening_challenge_counter += 1

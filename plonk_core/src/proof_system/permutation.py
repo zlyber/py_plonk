@@ -59,17 +59,17 @@ class Permutation:
 
         mid2_1_1 = beta.mul(k1)
         mid2_1 = mid2_1_1.mul(x)
-        mid2_2 = w_r_i.mul(mid2_1)
+        mid2_2 = w_r_i.add(mid2_1)
         mid2 = mid2_2.add(gamma)
 
         mid3_1_1 = beta.mul(k2)
         mid3_1 = mid3_1_1.mul(x)
-        mid3_2 = w_o_i.mul(mid3_1)
+        mid3_2 = w_o_i.add(mid3_1)
         mid3 = mid3_2.add(gamma)
 
         mid4_1_1 = beta.mul(k3)
         mid4_1 = mid4_1_1.mul(x)
-        mid4_2 = w_4_i.mul(mid4_1)
+        mid4_2 = w_4_i.add(mid4_1)
         mid4 = mid4_2.add(gamma)
 
         mid5 = mid1.mul(mid2)

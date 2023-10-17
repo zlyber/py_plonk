@@ -124,7 +124,7 @@ class Lookup:
         neg_z2_next = z2_i_next.neg()
         mid1 = neg_z2_next.mul(c_0)
         mid2 = mid1.mul(c_1)
-        c = mid2.mul(lookup_sep_cu)
+        c = mid2.mul(lookup_sep_sq)
 
         d_1 = z2_i.sub(one)
         d_2 = l1_i.mul(lookup_sep_cu)
@@ -156,7 +156,7 @@ class Lookup:
         lookup_sep: field
     ):
         one = delta.one()
-        lookup_sep_sq = lookup_sep.mul(lookup_sep)
+        lookup_sep_sq = lookup_sep.square()
         lookup_sep_cu = lookup_sep.mul(lookup_sep_sq)
         one_plus_delta = delta.add(one)
         epsilon_one_plus_delta = epsilon.mul(one_plus_delta)

@@ -227,7 +227,8 @@ def read_pk_data(filename,params):
             subsubkey=line[:-1]
             data[current_key][subkey][subsubkey]=[]
         elif not(line.endswith(":")):
-            value=field(parse_bigint(line),params)
+            value = parse_bigint(line)
+            value = field.from_repr(value, params)
             if subkey==None and subsubkey==None:
                 data[current_key].append(value)
             elif subkey and subsubkey==None:

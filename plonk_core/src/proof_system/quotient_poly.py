@@ -213,7 +213,7 @@ def compute(domain: Radix2EvaluationDomain,
         res = numerator.mul(denominator)
         quotient.append(res)
 
-    quotient_poly = coset_INTT(quotient,domain_8n,params)
+    quotient_poly = coset_INTT(quotient,domain_8n)
     hx = from_coeff_vec(quotient_poly)
 
     return hx

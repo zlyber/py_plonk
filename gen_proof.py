@@ -26,6 +26,7 @@ def gen_proof(pp, pk: Prover_Key, cs: StandardComposer, transcript: transcript.T
     domain=Radix2EvaluationDomain.new(cs.circuit_bound(),Fr)
     n=domain.size
     transcript.append_pi(b"pi")
+
     #1. Compute witness Polynomials
     w_l_scalar=read_scalar_data("w_l_scalar.txt")
     w_r_scalar=read_scalar_data("w_r_scalar.txt")
@@ -80,7 +81,7 @@ def gen_proof(pp, pk: Prover_Key, cs: StandardComposer, transcript: transcript.T
         if q_lookup == 0:
             f_scalars.elements[0].append(compressed_t_multiset.elements[0])
             for key in range(1,4):
-                    f_scalars.elements[key].append(field(gmpy2.mpz(0),Fr))  # 添加0到非零键对应的MultiSet
+                    f_scalars.elements[key].append(field(gmpy2.mpz(0),Fr))  
         else:
             f_scalars.elements[0].append(w_l)
             f_scalars.elements[1].append(w_r)
@@ -89,6 +90,7 @@ def gen_proof(pp, pk: Prover_Key, cs: StandardComposer, transcript: transcript.T
 
     # Compress all wires into a single vector
     compressed_f_multiset = f_scalars.compress(zeta)
+
     # Compute query poly
     compressed_f_poly = INTT(domain,compressed_f_multiset.elements)
     f_poly = from_coeff_vec(compressed_f_poly)
@@ -139,7 +141,7 @@ def gen_proof(pp, pk: Prover_Key, cs: StandardComposer, transcript: transcript.T
     assert gamma.value != delta.value, "challenges must be different"
     assert gamma.value != epsilon.value, "challenges must be different"
     assert delta.value != epsilon.value, "challenges must be different"
-
+    
     z_poly = mod.compute_permutation_poly(domain,
         (w_l_scalar, w_r_scalar, w_o_scalar, w_4_scalar),
         beta,
@@ -183,10 +185,10 @@ def gen_proof(pp, pk: Prover_Key, cs: StandardComposer, transcript: transcript.T
     transcript.append(b"alpha", alpha)
 
     range_sep_challenge = transcript.challenge_scalar(b"range separation challenge",Fr)
-    transcript.append(b"range separation challenge", range_sep_challenge)
+    transcript.append(b"range seperation challenge", range_sep_challenge)
 
     logic_sep_challenge = transcript.challenge_scalar(b"logic separation challenge",Fr)
-    transcript.append(b"logic separation challenge", logic_sep_challenge)
+    transcript.append(b"logic seperation challenge", logic_sep_challenge)
 
     fixed_base_sep_challenge = transcript.challenge_scalar(b"fixed base separation challenge",Fr)
     transcript.append(b"fixed base separation challenge", fixed_base_sep_challenge)
@@ -285,7 +287,7 @@ def gen_proof(pp, pk: Prover_Key, cs: StandardComposer, transcript: transcript.T
     transcript.append(b"h_1_next_eval", evaluations.lookup_evals.h1_next_eval)
     transcript.append(b"h_2_eval", evaluations.lookup_evals.h2_eval)
 
-    # Third, all evals needed for custom gates
+    # Fourth, all evals needed for custom gates
     for label, eval in evaluations.custom_evals.vals:
         static_label = label.encode('utf-8')
         transcript.append(static_label, eval)
@@ -342,26 +344,27 @@ def gen_proof(pp, pk: Prover_Key, cs: StandardComposer, transcript: transcript.T
         None
     )
 
-    Proof = kzg10.Proof(a_comm= w_commits[0].commitment.value,
-            b_comm= w_commits[1].commitment.value,
-            c_comm= w_commits[2].commitment.value,
-            d_comm= w_commits[3].commitment.value,
-            z_comm= saw_commits[0].commitment.value,
-            f_comm= f_poly_commit[0].commitment.value,
-            h_1_comm= h_1_poly_commit[0].commitment.value,
-            h_2_comm= h_2_poly_commit[0].commitment.value,
-            z_2_comm= z_2_poly_commit[0].commitment.value,
-            t_1_comm= t_commits[0].commitment.value,
-            t_2_comm= t_commits[1].commitment.value,
-            t_3_comm= t_commits[2].commitment.value,
-            t_4_comm= t_commits[3].commitment.value,
-            t_5_comm= t_commits[4].commitment.value,
-            t_6_comm= t_commits[5].commitment.value,
-            t_7_comm= t_commits[6].commitment.value,
-            t_8_comm= t_commits[7].commitment.value,
-            aw_opening= aw_opening,
-            saw_opening= saw_opening,
-            evaluations= evaluations)
+    Proof = kzg10.Proof(
+            a_comm = w_commits[0].commitment.value,
+            b_comm = w_commits[1].commitment.value,
+            c_comm = w_commits[2].commitment.value,
+            d_comm = w_commits[3].commitment.value,
+            z_comm = saw_commits[0].commitment.value,
+            f_comm = f_poly_commit[0].commitment.value,
+            h_1_comm = h_1_poly_commit[0].commitment.value,
+            h_2_comm = h_2_poly_commit[0].commitment.value,
+            z_2_comm = z_2_poly_commit[0].commitment.value,
+            t_1_comm = t_commits[0].commitment.value,
+            t_2_comm = t_commits[1].commitment.value,
+            t_3_comm = t_commits[2].commitment.value,
+            t_4_comm = t_commits[3].commitment.value,
+            t_5_comm = t_commits[4].commitment.value,
+            t_6_comm = t_commits[5].commitment.value,
+            t_7_comm = t_commits[6].commitment.value,
+            t_8_comm = t_commits[7].commitment.value,
+            aw_opening = aw_opening,
+            saw_opening = saw_opening,
+            evaluations = evaluations)
     return Proof
 
 

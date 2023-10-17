@@ -71,7 +71,6 @@ def distribute_powers_and_mul_by_const(coeffs, g, c):
         coeffs[i] = coeffs[i].mul(pow)
         pow = pow.mul(g)
 
-
 def degree(poly):
     if len(poly)==0:
         return 0
@@ -115,14 +114,21 @@ def INTT(domain,evals):
 
 # Compute a NTT over a coset of the domain, modifying the input vector in place.
 def coset_NTT(coeffs:list[field], domain, params):
-    distribute_powers(coeffs, params.GENERATOR, params)
-    evals = NTT(domain,coeffs,params)
+    modified_coeffs = coeffs[:]
+    distribute_powers(modified_coeffs, params.GENERATOR, params)
+    evals = NTT(domain,modified_coeffs,params)
     return evals
 
 # Compute a INTT over a coset of the domain, modifying the input vector in place.
-def coset_INTT(coeffs:list[field], domain, params):
-    distribute_powers(coeffs, coeffs[0].params.GENERATOR, params)
-    evals = INTT(domain,coeffs)
+def coset_INTT(evals:list[field], domain):
+    if type(evals[0])!=field:
+        for i in range(len(evals)):
+            evals[i]=field(evals[i],domain.group_gen.params)
+    #add zero to resize
+    zero = field.zero(evals[0].params)
+    resize_evals = resize(evals,domain.size,zero)
+    evals = operator(domain,resize_evals,domain.group_gen_inv)
+    distribute_powers_and_mul_by_const(evals, domain.generator_inv,domain.size_inv)
     return evals
 
 def from_coeff_vec(coeffs:list):
@@ -140,15 +146,18 @@ def poly_add_poly(self: list[field], other: list[field]):
         return res
     elif len(self) >= len(other):
         result = self[:]
-        for i in range(len(result)):
+        for i in range(len(other)):
             result[i] = result[i].add(other[i])
+
+        result = from_coeff_vec(result)
+        return result
     else:
         result = other[:]
-        for i in range(len(result)):
+        for i in range(len(self)):
             result[i] = result[i].add(self[i])
     
-    result = from_coeff_vec(result)
-    return result
+        result = from_coeff_vec(result)
+        return result
 
 def poly_mul_const(poly:list[field],elem:field):
     if len(poly) == 0 or elem.value == 0:
@@ -156,11 +165,13 @@ def poly_mul_const(poly:list[field],elem:field):
     else:
         result = poly[:]
         for i in range(len(result)):
-            result[i].mul(elem)
+            result[i] = result[i].mul(elem)
         return result
     
 def divide_with_q_and_r(self: list[field], divisor: list[field]):
-    if len(divisor) == 0:
+    if len(self) == 0:
+        return self
+    elif len(divisor) == 0:
         raise ValueError("Dividing by zero polynomial")
     elif len(self) < len(divisor):
         zero = field.zero(divisor[0].params)
@@ -171,7 +182,7 @@ def divide_with_q_and_r(self: list[field], divisor: list[field]):
         remainder = self[:]
         divisor_leading = divisor[-1]
         divisor_leading_inv = field.inverse(divisor_leading,divisor_leading.params)
-        while len(remainder) != 0 and len(remainder) > len(divisor):
+        while len(remainder) != 0 and len(remainder) >= len(divisor):
             remainder_leading = remainder[-1]
             cur_q_coeff = remainder_leading.mul(divisor_leading_inv)
             cur_q_degree = len(remainder) - len(divisor)
@@ -179,7 +190,7 @@ def divide_with_q_and_r(self: list[field], divisor: list[field]):
             for i, div_coeff in enumerate(divisor):
                 temp = cur_q_coeff.mul(div_coeff)
                 remainder[cur_q_degree + i] = remainder[cur_q_degree + i].sub(temp)
-            while remainder and remainder[-1].value == 0:
+            while remainder[-1] and remainder[-1].value == 0:
                 remainder.pop()
         res_quotient = from_coeff_vec(quotient)
         return res_quotient, remainder
@@ -219,20 +230,22 @@ def poly_add_poly_mul_const(self: list[field], f: field, other: list[field]):
         self = other[:]
         for i in range(len(self)):
             self[i] = self[i].mul(f)
-        return
+        return self
     elif len(other) == 0:
-        return
+        return self
     elif len(self) >= len(other):
         pass
     else:
         zero = field.zero(f.params)
         self = resize(self,len(other),zero)
-    for i in range(len(self)):
+    for i in range(len(other)):
         temp = f.mul(other[i])
         self[i] = self[i].add(temp)
     self = from_coeff_vec(self)
-    return
+    return self
 
+# Given a vector of field elements {v_i}, compute the vector {coeff * v_i^(-1)}
+# This method is explicitly single core.
 def serial_batch_inversion_and_mul(v: list[field], coeff: field):
     prod = []
     tmp = coeff.one()
@@ -247,12 +260,16 @@ def serial_batch_inversion_and_mul(v: list[field], coeff: field):
 
     # Multiply product by coeff, so all inverses will be scaled by coeff
     tmp = tmp.mul(coeff)
-
-    for i, (f, s) in enumerate(zip(reversed(v), reversed(prod[:-1] + [coeff.one()]))):
-        new_tmp = tmp.mul(f)
-        f = tmp.mul(s)
-        tmp = new_tmp
-        v[len(v) - 1 - i] = f  # Update the value of v with the new result
+    rev_prod = list(reversed(prod[:-1]))
+    rev_prod.append(coeff.one())
+    # Backwards, skip last element, fill in one for last term.
+    for i,(f, s) in enumerate(zip(reversed(v), rev_prod)):
+        if f.value != 0:
+            # tmp := tmp * f; f := tmp * s = 1/f
+            new_tmp = tmp.mul(f)
+            f = tmp.mul(s)
+            tmp = new_tmp
+            v[len(v) - 1 - i] = f  # Update the value of v with the new result
 
 # Given a vector of field elements {v_i}, compute the vector {coeff * v_i^(-1)}
 def batch_inversion_and_mul(v: list[field], coeff: field):

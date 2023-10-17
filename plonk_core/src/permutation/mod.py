@@ -29,18 +29,19 @@ def lookup_ratio(delta:field, epsilon:field, f:field, t:field, t_next:field,
     mid4 = mid2.add(mid3)
     mid5 = one_plus_delta.mul(mid1)
     result = mid5.mul(mid4)
-    mid6 = h_2.add(delta)
-    mid7 = result.add(h_1)
+
+    mid6 = h_2.mul(delta)
+    mid7 = epsilon_one_plus_delta.add(h_1)
     mid8 = mid7.add(mid6)
-    result = result.mul(mid8)
     mid9 = epsilon_one_plus_delta.add(h_2)
     mid10 = h_1_next.mul(delta)
     mid11 = mid9.add(mid10)
-    result = result.mul(mid11)
+    mid12 = mid8.mul(mid11)
+    mid12 = field.inverse(mid12,mid12.params)
+    result = result.mul(mid12)
 
-    result_inv = field.inverse(result,result.params)
 
-    return result_inv
+    return result
 
 
 def compute_permutation_poly(domain, wires, beta:field, gamma, sigma_polys):
@@ -49,7 +50,7 @@ def compute_permutation_poly(domain, wires, beta:field, gamma, sigma_polys):
     params = beta.params
 
     # Constants defining cosets H, k1H, k2H, etc
-    ks = [field.zero(params),constants.K1(params),constants.K2(params),constants.K3(params)]
+    ks = [beta.one(),constants.K1(params),constants.K2(params),constants.K3(params)]
     sigma_mappings = [[],[],[],[]]
 
     sigma_mappings[0] = NTT(domain,sigma_polys[0],params)
@@ -119,8 +120,8 @@ def compute_permutation_poly(domain, wires, beta:field, gamma, sigma_polys):
     z.pop()
     
     #Compute z poly
-    INTT(domain,z)
-    z_poly = from_coeff_vec(z)
+    z_poly = INTT(domain,z)
+    z_poly = from_coeff_vec(z_poly)
     
     return z_poly
 
@@ -151,8 +152,8 @@ def compute_lookup_permutation_poly(domain, f, t, h_1, h_2, delta, epsilon):
         p.append(state)
     
     p.pop()
-    INTT(domain,p)
-    p_poly = from_coeff_vec(p)
+    p_poly = INTT(domain,p)
+    p_poly = from_coeff_vec(p_poly)
     
     return p_poly
 
