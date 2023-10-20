@@ -1,21 +1,20 @@
 from dataclasses import dataclass
-from field import field
 import gmpy2
-from bls12_381 import fq,fr
+from bls12_381 import fr
 import math
 
 @dataclass
 class Radix2EvaluationDomain:
     size: int
     log_size_of_group: int
-    size_as_field_element: field
-    size_inv: field
-    group_gen: field
-    group_gen_inv: field
-    generator_inv: field
+    size_as_field_element: fr.Fr
+    size_inv: fr.Fr
+    group_gen: fr.Fr
+    group_gen_inv: fr.Fr
+    generator_inv: fr.Fr
 
     @classmethod
-    def new(cls, num_coeffs: int, params):
+    def new(cls, num_coeffs: int, params:fr.Fr):
         # Compute the size of our evaluation domain
         size = num_coeffs if num_coeffs & (num_coeffs - 1) == 0 else 2 ** num_coeffs.bit_length()
         log_size_of_group = size.bit_length()-1
@@ -26,16 +25,16 @@ class Radix2EvaluationDomain:
 
         # Compute the generator for the multiplicative subgroup.
         # It should be the 2^(log_size_of_group) root of unity.
-        group_gen = field(params.get_root_of_unity(size),params)
+        group_gen = fr.Fr(value=params.get_root_of_unity(size))
         
         # Check that it is indeed the 2^(log_size_of_group) root of unity.
         group_gen_pow = group_gen.pow(size)
-        assert group_gen_pow.value == params.one()
+        assert group_gen_pow == params.one()
 
-        size_as_field_element=field.from_repr(size,params)
-        size_inv = field.inverse(size_as_field_element,params)
-        group_gen_inv = field.inverse(group_gen,params)
-        generator_inv = field.inverse(params.multiplicative_generator(),params)
+        size_as_field_element=fr.Fr.from_repr(size)
+        size_inv = fr.Fr.inverse(size_as_field_element)
+        group_gen_inv = fr.Fr.inverse(group_gen)
+        generator_inv = fr.Fr.inverse(params.multiplicative_generator())
 
         return cls(size, log_size_of_group, size_as_field_element, size_inv, group_gen, group_gen_inv, generator_inv)
     
@@ -51,13 +50,13 @@ class Radix2EvaluationDomain:
     # However, if tau in H, both the numerator and denominator equal 0
     # when i corresponds to the value tau equals, and the coefficient is 0 everywhere else.
     # We handle this case separately, and we can easily detect by checking if the vanishing poly is 0.
-    def evaluate_all_lagrange_coefficients(self, tau: field):
+    def evaluate_all_lagrange_coefficients(self, tau: fr.Fr):
         size = self.size
         t_size = tau.pow(size)
         domain_offset = tau.one()
         one = tau.one()
         z_h_at_tau = t_size.sub(domain_offset)
-        zero = field.zero(tau.params)
+        zero = fr.Fr.zero()
 
         if z_h_at_tau.value == 0:
             u = [zero for _ in range(size)]
@@ -81,10 +80,10 @@ class Radix2EvaluationDomain:
             from arithmetic import batch_inversion
 
             # v_0_inv = m * h^(m-1)
-            f_size = field.from_repr(size,tau.params)
+            f_size = fr.Fr.from_repr(size)
             pow_dof = domain_offset.pow(size-1)
             v_0_inv = f_size.mul(pow_dof)
-            z_h_at_tau_inv = field.inverse(z_h_at_tau,z_h_at_tau.params)
+            z_h_at_tau_inv = fr.Fr.inverse(z_h_at_tau)
             l_i = z_h_at_tau_inv.mul(v_0_inv)
             negative_cur_elem = domain_offset.neg()
             lagrange_coefficients_inverse = [zero for _ in range(size)]
@@ -134,7 +133,7 @@ class Radix2EvaluationDomain:
     
     # This evaluates the vanishing polynomial for this domain at tau.
     # For multiplicative subgroups, this polynomial is `z(X) = X^self.size - 1`.
-    def evaluate_vanishing_polynomial(self, tau: field):
+    def evaluate_vanishing_polynomial(self, tau: fr.Fr):
         one = tau.one()
         pow_tau = tau.pow(self.size)
         return pow_tau.sub(one)

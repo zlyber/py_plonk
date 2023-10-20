@@ -1,18 +1,18 @@
 from dataclasses import dataclass
-from field import field
+from bls12_381 import fr
 from plonk_core.src.proof_system.mod import CustomEvaluations
 from plonk_core.src.proof_system.widget.mod import WitnessValues,delta
 from arithmetic import poly_mul_const
 @dataclass
 class LogicValues:
     # Left wire value in the next position
-    a_next_val: field
+    a_next_val: fr.Fr
     # Right wire value in the next position
-    b_next_val: field
+    b_next_val: fr.Fr
     # Fourth wire value in the next position
-    d_next_val: field
+    d_next_val: fr.Fr
     # Constant selector value
-    q_c_val: field
+    q_c_val: fr.Fr
 
     @staticmethod
     def from_evaluations(custom_evals:CustomEvaluations):
@@ -24,8 +24,8 @@ class LogicValues:
     
 class LogicGate:
     @staticmethod
-    def constraints(separation_challenge:field, wit_vals:WitnessValues, custom_vals:LogicValues):
-        four = field.from_repr(4,separation_challenge.params)
+    def constraints(separation_challenge:fr.Fr, wit_vals:WitnessValues, custom_vals:LogicValues):
+        four = fr.Fr.from_repr(4)
         kappa = separation_challenge.square()
         kappa_sq = kappa.square()
         kappa_cu = kappa_sq.mul(kappa)
@@ -59,7 +59,7 @@ class LogicGate:
         return res
     
     @staticmethod
-    def quotient_term(selector: field, separation_challenge: field, 
+    def quotient_term(selector: fr.Fr, separation_challenge: fr.Fr, 
                       wit_vals: WitnessValues, custom_vals:LogicValues):
         temp = LogicGate.constraints(separation_challenge, wit_vals, custom_vals)
         res = selector.mul(temp)
@@ -76,14 +76,14 @@ class LogicGate:
 # B = q_c * [9c - 3(a+b)]
 # E = 3(a+b+c) - 2F
 # F = w[w(4w - 18(a+b) + 81) + 18(a^2 + b^2) - 81(a+b) + 83]
-def delta_xor_and(a: field, b: field, w: field, c: field, q_c: field):
-    nine = field.from_repr(9,a.params)
-    two = field.from_repr(2,a.params)
-    three = field.from_repr(3,a.params)
-    four = field.from_repr(4,a.params)
-    eighteen = field.from_repr(18,a.params)
-    eighty_one = field.from_repr(81,a.params)
-    eighty_three = field.from_repr(83,a.params)
+def delta_xor_and(a: fr.Fr, b: fr.Fr, w: fr.Fr, c: fr.Fr, q_c: fr.Fr):
+    nine = fr.Fr.from_repr(9)
+    two = fr.Fr.from_repr(2)
+    three = fr.Fr.from_repr(3)
+    four = fr.Fr.from_repr(4)
+    eighteen = fr.Fr.from_repr(18)
+    eighty_one = fr.Fr.from_repr(81)
+    eighty_three = fr.Fr.from_repr(83)
 
     f_1_1 = four.mul(w)
     f_1_2_1 = a.add(b)

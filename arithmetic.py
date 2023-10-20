@@ -1,6 +1,6 @@
 import gmpy2
 import copy
-from field import field
+from bls12_381 import fr,fq
 from domain import Radix2EvaluationDomain
 from structure import AffinePointG1
 from jacobian import ProjectivePointG1
@@ -20,15 +20,15 @@ def derange(xi, log_len):
             xi[idx], xi[ridx] = xi[ridx], xi[idx]
     return xi
 
-def precompute_twiddles(domain:Radix2EvaluationDomain, root:field):
+def precompute_twiddles(domain:Radix2EvaluationDomain, root:fr.Fr):
     log_size = int(math.log2(domain.size))
-    powers = [root.zero(root.params)] * (1 << (log_size - 1))
-    powers[0] = field(root.params.one(),root.params)
+    powers = [root.zero()] * (1 << (log_size - 1))
+    powers[0] = root.one()
     for idx in range(1, len(powers)):
         powers[idx] = powers[idx - 1].mul(root)
     return powers
 
-def operator(domain:Radix2EvaluationDomain, xi:list[field], root:field):
+def operator(domain:Radix2EvaluationDomain, xi:list[fr.Fr], root:fr.Fr):
     log_size = int(math.log2(domain.size))
     xi = derange(xi,log_size)
     twiddles=precompute_twiddles(domain,root)
@@ -59,8 +59,8 @@ def resize(self, target_len, padding):
         res.extend([padding for _ in range(num_to_pad)])
     return res
 
-def distribute_powers(coeffs:list[field], g, params):
-    g_field = field(g,params)
+def distribute_powers(coeffs:list[fr.Fr], g):
+    g_field = fr.Fr(value = g)
     one = g_field.one()
     distribute_powers_and_mul_by_const(coeffs, g_field, one)
 
@@ -78,11 +78,11 @@ def degree(poly):
         assert not poly[-1]==0
         return len(poly) - 1
 
-def convert_to_bigints(p: list[field]):
-    coeffs = [field(s.into_repr(),s.params) for s in p]
+def convert_to_bigints(p: list[fr.Fr]):
+    coeffs = [fr.Fr(value = s.into_repr()) for s in p]
     return coeffs
 
-def skip_leading_zeros_and_convert_to_bigints(p: list[field]):
+def skip_leading_zeros_and_convert_to_bigints(p: list[fr.Fr]):
     num_leading_zeros = 0
     while num_leading_zeros < len(p) and p[num_leading_zeros] == 0:
         num_leading_zeros += 1
@@ -90,22 +90,16 @@ def skip_leading_zeros_and_convert_to_bigints(p: list[field]):
     coeffs = convert_to_bigints(p[num_leading_zeros:])
     return num_leading_zeros, coeffs
 
-def NTT(domain,coeffs,params):
-    zero = field.zero(params)
-    if coeffs and type(coeffs[0])!=field:
-        for i in range(len(coeffs)):
-            coeffs[i]=field(coeffs[i],domain.group_gen.params)
+def NTT(domain,coeffs):
+    zero = fr.Fr.zero()
     #add zero to resize
     resize_coeffs = resize(coeffs,domain.size,zero)
     evals = operator(domain,resize_coeffs,domain.group_gen)
     return evals
 
 def INTT(domain,evals):
-    if type(evals[0])!=field:
-        for i in range(len(evals)):
-            evals[i]=field(evals[i],domain.group_gen.params)
     #add zero to resize
-    zero = field.zero(evals[0].params)
+    zero = fr.Fr.zero()
     resize_evals = resize(evals,domain.size,zero)
     evals = operator(domain,resize_evals,domain.group_gen_inv)
     for i in range(len(evals)):
@@ -113,19 +107,16 @@ def INTT(domain,evals):
     return evals
 
 # Compute a NTT over a coset of the domain, modifying the input vector in place.
-def coset_NTT(coeffs:list[field], domain, params):
+def coset_NTT(coeffs:list[fr.Fr], domain):
     modified_coeffs = coeffs[:]
-    distribute_powers(modified_coeffs, params.GENERATOR, params)
-    evals = NTT(domain,modified_coeffs,params)
+    distribute_powers(modified_coeffs, fr.Fr.GENERATOR)
+    evals = NTT(domain,modified_coeffs)
     return evals
 
 # Compute a INTT over a coset of the domain, modifying the input vector in place.
-def coset_INTT(evals:list[field], domain):
-    if type(evals[0])!=field:
-        for i in range(len(evals)):
-            evals[i]=field(evals[i],domain.group_gen.params)
+def coset_INTT(evals:list[fr.Fr], domain):
     #add zero to resize
-    zero = field.zero(evals[0].params)
+    zero = fr.Fr.zero()
     resize_evals = resize(evals,domain.size,zero)
     evals = operator(domain,resize_evals,domain.group_gen_inv)
     distribute_powers_and_mul_by_const(evals, domain.generator_inv,domain.size_inv)
@@ -137,7 +128,7 @@ def from_coeff_vec(coeffs:list):
         result.pop()
     return result
 
-def poly_add_poly(self: list[field], other: list[field]):
+def poly_add_poly(self: list[fr.Fr], other: list[fr.Fr]):
     if len(self) == 0:
         res = other[:]
         return res
@@ -159,7 +150,7 @@ def poly_add_poly(self: list[field], other: list[field]):
         result = from_coeff_vec(result)
         return result
 
-def poly_mul_const(poly:list[field],elem:field):
+def poly_mul_const(poly:list[fr.Fr],elem:fr.Fr):
     if len(poly) == 0 or elem.value == 0:
         return poly
     else:
@@ -168,20 +159,20 @@ def poly_mul_const(poly:list[field],elem:field):
             result[i] = result[i].mul(elem)
         return result
     
-def divide_with_q_and_r(self: list[field], divisor: list[field]):
+def divide_with_q_and_r(self: list[fr.Fr], divisor: list[fr.Fr]):
     if len(self) == 0:
         return self
     elif len(divisor) == 0:
         raise ValueError("Dividing by zero polynomial")
     elif len(self) < len(divisor):
-        zero = field.zero(divisor[0].params)
+        zero = fr.Fr.zero()
         return [zero]
     else:
-        zero = field.zero(divisor[0].params)
+        zero = fr.Fr.zero()
         quotient = [zero for _ in range(len(self) - len(divisor) + 1)]
         remainder = self[:]
         divisor_leading = divisor[-1]
-        divisor_leading_inv = field.inverse(divisor_leading,divisor_leading.params)
+        divisor_leading_inv = fr.Fr.inverse(divisor_leading)
         while len(remainder) != 0 and len(remainder) >= len(divisor):
             remainder_leading = remainder[-1]
             cur_q_coeff = remainder_leading.mul(divisor_leading_inv)
@@ -195,13 +186,13 @@ def divide_with_q_and_r(self: list[field], divisor: list[field]):
         res_quotient = from_coeff_vec(quotient)
         return res_quotient, remainder
             
-def poly_div_poly(self: list[field], divisor: list[field]):
+def poly_div_poly(self: list[fr.Fr], divisor: list[fr.Fr]):
         res, remainder = divide_with_q_and_r(self,divisor)
         return res
 
-def rand_poly(d,params):
+def rand_poly(d):
     random.seed(42)
-    random_coeffs = [field.from_repr(random.random,params) for _ in range(d + 1)]
+    random_coeffs = [fr.Fr.from_repr(random.random) for _ in range(d + 1)]
     return from_coeff_vec(random_coeffs)
 
 def ln_without_floats(a):
@@ -209,8 +200,8 @@ def ln_without_floats(a):
     return int(math.log2(a) * 69 / 100)
 
 # Evaluates `self` at the given `point` in `Self::Point`.
-def evaluate(self, point: field):
-    zero = field.zero(point.params)
+def evaluate(self, point: fr.Fr):
+    zero = fr.Fr.zero()
     if len(self) == 0:
         return zero
     elif point.value == 0:
@@ -218,14 +209,14 @@ def evaluate(self, point: field):
     return horner_evaluate(self, point)
 
 # Horner's method for polynomial evaluation
-def horner_evaluate(poly_coeffs: list[field], point: field):
-    result = field.zero(point.params)
+def horner_evaluate(poly_coeffs: list[fr.Fr], point: fr.Fr):
+    result = fr.Fr.zero()
     for coeff in reversed(poly_coeffs):
         result = result.mul(point)
         result = result.add(coeff)
     return result
 
-def poly_add_poly_mul_const(self: list[field], f: field, other: list[field]):
+def poly_add_poly_mul_const(self: list[fr.Fr], f: fr.Fr, other: list[fr.Fr]):
     if len(self) == 0:
         self = other[:]
         for i in range(len(self)):
@@ -236,7 +227,7 @@ def poly_add_poly_mul_const(self: list[field], f: field, other: list[field]):
     elif len(self) >= len(other):
         pass
     else:
-        zero = field.zero(f.params)
+        zero = fr.Fr.zero()
         self = resize(self,len(other),zero)
     for i in range(len(other)):
         temp = f.mul(other[i])
@@ -246,7 +237,7 @@ def poly_add_poly_mul_const(self: list[field], f: field, other: list[field]):
 
 # Given a vector of field elements {v_i}, compute the vector {coeff * v_i^(-1)}
 # This method is explicitly single core.
-def serial_batch_inversion_and_mul(v: list[field], coeff: field):
+def serial_batch_inversion_and_mul(v: list[fr.Fr], coeff: fr.Fr):
     prod = []
     tmp = coeff.one()
 
@@ -256,7 +247,7 @@ def serial_batch_inversion_and_mul(v: list[field], coeff: field):
             prod.append(tmp)
 
     # Invert `tmp`.
-    tmp = field.inverse(tmp,tmp.params)
+    tmp = fr.Fr.inverse(tmp)
 
     # Multiply product by coeff, so all inverses will be scaled by coeff
     tmp = tmp.mul(coeff)
@@ -272,11 +263,11 @@ def serial_batch_inversion_and_mul(v: list[field], coeff: field):
             v[len(v) - 1 - i] = f  # Update the value of v with the new result
 
 # Given a vector of field elements {v_i}, compute the vector {coeff * v_i^(-1)}
-def batch_inversion_and_mul(v: list[field], coeff: field):
+def batch_inversion_and_mul(v: list[fr.Fr], coeff: fr.Fr):
     serial_batch_inversion_and_mul(v, coeff)
 
 # Given a vector of field elements {v_i}, compute the vector {v_i^(-1)}
-def batch_inversion(v: list[field]):
+def batch_inversion(v: list[fr.Fr]):
     one = v[0].one()
     batch_inversion_and_mul(v, one)
 
@@ -291,16 +282,16 @@ def batch_inversion(v: list[field]):
 # to obtain the expression:
 # L_0(X) = (X^n - 1) / n * (X - 1)
 def compute_first_lagrange_evaluation(
-    domain: Radix2EvaluationDomain, z_h_eval: field, z_challenge: field):
+    domain: Radix2EvaluationDomain, z_h_eval: fr.Fr, z_challenge: fr.Fr):
     one = z_challenge.one()
-    n_fr = field.from_repr(domain.size,z_challenge.params)  
+    n_fr = fr.Fr.from_repr(domain.size)  
     z_challenge_sub_one = z_challenge.sub(one)
     denom = n_fr.mul(z_challenge_sub_one)
-    denom_in = field.inverse(denom,denom.params)
+    denom_in = fr.Fr.inverse(denom)
     res = z_h_eval.mul(denom_in)
     return res  
 
-def MSM(bases:list[AffinePointG1], scalars:list[field], params):
+def MSM(bases:list[AffinePointG1], scalars:list[fr.Fr], params):
     size = min(len(bases), len(scalars))
     fq_elem = bases[0].x
     scalars = scalars[:size]
@@ -308,8 +299,8 @@ def MSM(bases:list[AffinePointG1], scalars:list[field], params):
     scalars_and_bases_iter = [(s, b) for s, b in zip(scalars, bases) if not s==0]
 
     c = 3 if size < 32 else ln_without_floats(size) + 2
-    num_bits = params.MODULUS_BITS
-    fr_one = field(params.one(),params)
+    num_bits = fr.Fr.MODULUS_BITS
+    fr_one = params.one()
     fr_one = fr_one.into_repr()
 
     zero:ProjectivePointG1 = ProjectivePointG1.zero(fq_elem)

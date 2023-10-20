@@ -1,24 +1,24 @@
 from plonk_core.src.permutation import constants
-from field import field
 from arithmetic import NTT,INTT,from_coeff_vec
+from bls12_381 import fr
 import copy
 import math
 
-def numerator_irreducible(root:field, w:field, k:field, beta:field, gamma:field):
+def numerator_irreducible(root, w, k, beta, gamma):
     mid1 = beta.mul(k)
     mid2 = mid1.mul(root)
     mid3 = w.add(mid2)
     mid4 = mid3.add(gamma)
     return mid4
 
-def denominator_irreducible(w:field, sigma:field, beta:field, gamma:field):
+def denominator_irreducible(w, sigma, beta, gamma):
     mid1 = beta.mul(sigma)
     mid2 = w.add(mid1)
     mid3 = mid2.add(gamma)
     return mid3
 
-def lookup_ratio(delta:field, epsilon:field, f:field, t:field, t_next:field,
-                h_1:field, h_1_next:field, h_2:field):
+def lookup_ratio(delta, epsilon, f, t, t_next,
+                h_1, h_1_next, h_2):
     one = delta.one()
     one_plus_delta =delta.add(one)
     epsilon_one_plus_delta = epsilon.mul(one_plus_delta)
@@ -37,26 +37,24 @@ def lookup_ratio(delta:field, epsilon:field, f:field, t:field, t_next:field,
     mid10 = h_1_next.mul(delta)
     mid11 = mid9.add(mid10)
     mid12 = mid8.mul(mid11)
-    mid12 = field.inverse(mid12,mid12.params)
+    mid12 = fr.Fr.inverse(mid12)
     result = result.mul(mid12)
 
 
     return result
 
 
-def compute_permutation_poly(domain, wires, beta:field, gamma, sigma_polys):
+def compute_permutation_poly(domain, wires, beta, gamma, sigma_polys):
     n = domain.size
-    #get Fr
-    params = beta.params
 
     # Constants defining cosets H, k1H, k2H, etc
-    ks = [beta.one(),constants.K1(params),constants.K2(params),constants.K3(params)]
+    ks = [beta.one(),constants.K1(),constants.K2(),constants.K3()]
     sigma_mappings = [[],[],[],[]]
 
-    sigma_mappings[0] = NTT(domain,sigma_polys[0],params)
-    sigma_mappings[1] = NTT(domain,sigma_polys[1],params)
-    sigma_mappings[2] = NTT(domain,sigma_polys[2],params)
-    sigma_mappings[3] = NTT(domain,sigma_polys[3],params)
+    sigma_mappings[0] = NTT(domain,sigma_polys[0])
+    sigma_mappings[1] = NTT(domain,sigma_polys[1])
+    sigma_mappings[2] = NTT(domain,sigma_polys[2])
+    sigma_mappings[3] = NTT(domain,sigma_polys[3])
 
     # Transpose wires and sigma values to get "rows" in the form [wl_i,
     # wr_i, wo_i, ... ] where each row contains the wire and sigma
@@ -71,7 +69,7 @@ def compute_permutation_poly(domain, wires, beta:field, gamma, sigma_polys):
 
     # Compute all roots, same as calculating twiddles, but doubled in size
     log_size = int(math.log2(n))
-    roots = [field.zero(params)] * (1 << log_size )
+    roots = [fr.Fr.zero() for _ in range(1 << log_size )]
     roots[0] = beta.one()
     for idx in range(1, len(roots)):
         roots[idx] = roots[idx - 1].mul(domain.group_gen)
@@ -100,7 +98,7 @@ def compute_permutation_poly(domain, wires, beta:field, gamma, sigma_polys):
             denominator_product = denominator_product.mul(denominator_temp)
         
         # Calculate the product coefficient for the gate
-        denominator_product_under = field.inverse(denominator_product,params)
+        denominator_product_under = fr.Fr.inverse(denominator_product)
         gate_coefficient = numerator_product.mul(denominator_product_under)
         
         # Append the gate coefficient to the product_argument list
@@ -129,8 +127,7 @@ def compute_permutation_poly(domain, wires, beta:field, gamma, sigma_polys):
 def compute_lookup_permutation_poly(domain, f, t, h_1, h_2, delta, epsilon):
     n = domain.size
 
-    #get Fr
-    params = delta.params
+
 
     assert len(f) == n
     assert len(t) == n

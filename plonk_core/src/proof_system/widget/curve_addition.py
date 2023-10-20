@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from field import field
+from bls12_381 import fr
 from plonk_core.src.proof_system.mod import CustomEvaluations
 from plonk_core.src.proof_system.widget.mod import WitnessValues
 from bls12_381.edwards import EdwardsParameters as P
@@ -7,11 +7,11 @@ from arithmetic import poly_mul_const
 @dataclass
 class CAValues:
     # Left wire value in the next position
-    a_next_val: field
+    a_next_val: fr.Fr
     # Right wire value in the next position
-    b_next_val: field
+    b_next_val: fr.Fr
     # Fourth wire value in the next position
-    d_next_val: field
+    d_next_val: fr.Fr
 
     @staticmethod
     def from_evaluations(custom_evals:CustomEvaluations):
@@ -23,7 +23,7 @@ class CAValues:
     
 class CAGate:
     @staticmethod
-    def constraints(separation_challenge: field, wit_vals: WitnessValues, custom_vals: CAValues):
+    def constraints(separation_challenge: fr.Fr, wit_vals: WitnessValues, custom_vals: CAValues):
         x_1 = wit_vals.a_val
         x_3 = custom_vals.a_next_val
         y_1 = wit_vals.b_val
@@ -69,7 +69,7 @@ class CAGate:
 
 
     @staticmethod
-    def quotient_term(selector: field, separation_challenge: field, 
+    def quotient_term(selector: fr.Fr, separation_challenge: fr.Fr, 
                       wit_vals: WitnessValues, custom_vals:CAValues):
         temp = CAGate.constraints(separation_challenge, wit_vals, custom_vals)
         res = selector.mul(temp)

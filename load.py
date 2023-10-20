@@ -1,7 +1,7 @@
 import gmpy2
 import re
 from structure import AffinePointG1,AffinePointG2,G2Coordinate,UniversalParams
-from field import field
+from bls12_381 import fq,fr
 from plonk_core.src.proof_system.prover_key import Prover_Key
 from plonk_core.src.proof_system.widget.arithmetic import Arith
 from plonk_core.src.proof_system.widget.lookup import Lookup
@@ -12,7 +12,7 @@ def parse_bigint(s):
     bigint_str = s[start:end]
     return gmpy2.mpz(bigint_str,16)
 
-def read_pp_data(filename,params):
+def read_pp_data(filename):
     # 打开文本文件以读取数据
     with open(filename, "r") as file:
         data = file.read()
@@ -33,29 +33,29 @@ def read_pp_data(filename,params):
             if current_section == "powers_of_g":
                 x_str = values[1]
                 y_str = values[2]
-                G1_point= AffinePointG1(x=field(parse_bigint(x_str),params),y=field(parse_bigint(y_str),params))
+                G1_point= AffinePointG1(x=fq.Fq(value=parse_bigint(x_str)),y=fq.Fq(value=parse_bigint(y_str)))
                 powers_of_g.append(G1_point)
             elif current_section == "powers_of_gamma_g":
                 x_str = values[1]
                 y_str = values[2]
-                G1_point= AffinePointG1(x=field(parse_bigint(x_str),params),y=field(parse_bigint(y_str),params))
+                G1_point= AffinePointG1(x=fq.Fq(value=parse_bigint(x_str)),y=fq.Fq(value=parse_bigint(y_str)))
                 powers_of_gamma_g.append(G1_point)
             elif current_section == "h":
-                h.x.c0 = parse_bigint(values[1])
-                h.x.c1 = parse_bigint(values[2])
-                h.y.c0 = parse_bigint(values[3])
-                h.y.c1 = parse_bigint(values[4])
+                h.x.c0 = fq.Fq(value=parse_bigint(values[1]))
+                h.x.c1 = fq.Fq(value=parse_bigint(values[2]))
+                h.y.c0 = fq.Fq(value=parse_bigint(values[3]))
+                h.y.c1 = fq.Fq(value=parse_bigint(values[4]))
                 
             elif current_section == "beta_h":
-                beta_h.x.c0 = parse_bigint(values[1])
-                beta_h.x.c1 = parse_bigint(values[2])
-                beta_h.y.c0 = parse_bigint(values[3])
-                beta_h.y.c1 = parse_bigint(values[4])
+                beta_h.x.c0 = fq.Fq(value=parse_bigint(values[1]))
+                beta_h.x.c1 = fq.Fq(value=parse_bigint(values[2]))
+                beta_h.y.c0 = fq.Fq(value=parse_bigint(values[3]))
+                beta_h.y.c1 = fq.Fq(value=parse_bigint(values[4]))
                 
     pp = UniversalParams(powers_of_g, powers_of_gamma_g, h, beta_h)
     return pp
 
-def read_pk_data(filename,params):
+def read_pk_data(filename):
     
     with open(filename, "r") as file:
         lines = file.readlines()
@@ -228,7 +228,7 @@ def read_pk_data(filename,params):
             data[current_key][subkey][subsubkey]=[]
         elif not(line.endswith(":")):
             value = parse_bigint(line)
-            value = field.from_repr(value, params)
+            value = fr.Fr.from_repr(value)
             if subkey==None and subsubkey==None:
                 data[current_key].append(value)
             elif subkey and subsubkey==None:
@@ -271,7 +271,7 @@ def read_pk_data(filename,params):
     
     return pk
 
-def read_cs_data(filename,params):
+def read_cs_data(filename):
     with open(filename,"r")as file:
         lines = file.readlines()
     n = int(lines[0].split(':')[1].strip())
@@ -282,7 +282,7 @@ def read_cs_data(filename,params):
     pi = match.group(1)
     public_inputs_list = [gmpy2.mpz(x) for x in pi.split(',')]
     public_inputs = (public_inputs_list[3] << 192) | (public_inputs_list[2] << 128) | (public_inputs_list[1] << 64) | public_inputs_list[0]
-    public_inputs = field(public_inputs,params)
+    public_inputs = fr.Fr(value=public_inputs)
     data = {}
     data["n"]=n
     data["intended_pi_pos"]=eval(intended_pi_pos)
@@ -297,7 +297,8 @@ def read_cs_data(filename,params):
             current_key=line.rstrip(":")
             data[current_key]=[]
         elif line.startswith("Fp"):
-            value=parse_bigint(line)
+            value = parse_bigint(line)
+            value = fr.Fr(value=value)
             data[current_key].append(value)
         else:
             data[current_key].append(int(line))
@@ -321,7 +322,7 @@ def read_scalar_data(filename):
         combined_value = 0
         for u64_element in reversed(elements):
             combined_value = (combined_value << 64) | u64_element
-        big_list.append(gmpy2.mpz(combined_value))
+        big_list.append(fr.Fr(value=gmpy2.mpz(combined_value)))
 
     matches.pop(0)
 
@@ -335,5 +336,5 @@ def read_scalar_data(filename):
         combined_value = 0
         for u64_element in reversed(elements):
             combined_value = (combined_value << 64) | u64_element
-        big_list.append(gmpy2.mpz(combined_value))
+        big_list.append(fr.Fr(value=gmpy2.mpz(combined_value)))
     return big_list

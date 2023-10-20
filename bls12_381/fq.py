@@ -1,9 +1,13 @@
 import gmpy2
 import math
 from dataclasses import dataclass
+from field import field
 
-@dataclass
-class FftParameters:
+
+class Fq(field):
+    def __init__(self, value:gmpy2.mpz):
+        self.value = value
+
     TWO_ADICITY: int = 1
 
     TWO_ADIC_ROOT_OF_UNITY: gmpy2.mpz = gmpy2.mpz(
@@ -11,8 +15,6 @@ class FftParameters:
         16
     )
 
-@dataclass
-class FpParameters:
     MODULUS: gmpy2.mpz = gmpy2.mpz(
         4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787
     )
@@ -53,47 +55,45 @@ class FpParameters:
         16
     )
 
-@dataclass
-class FqParameters(FftParameters, FpParameters):
     #384bits
     BYTE_SIZE: int = 48
-    # Return the Multiplicative identity
-    def one(cls):
-        return cls.R
+    # # Return the Multiplicative identity
+    # def one(cls):
+    #     return cls(cls.R)
     
-    # Returns the 2^s root of unity.
-    def two_adic_root_of_unity(self):
-        return self.TWO_ADIC_ROOT_OF_UNITY 
+    # # Returns the 2^s root of unity.
+    # def two_adic_root_of_unity(self):
+    #     return self.TWO_ADIC_ROOT_OF_UNITY 
 
-    # Returns the 2^s * small_subgroup_base^small_subgroup_base_adicity root of unity
-    # if a small subgroup is defined.
-    def large_subgroup_root_of_unity():
-        pass
+    # # Returns the 2^s * small_subgroup_base^small_subgroup_base_adicity root of unity
+    # # if a small subgroup is defined.
+    # def large_subgroup_root_of_unity():
+    #     pass
 
-    # Returns the multiplicative generator of `char()` - 1 order.
-    def multiplicative_generator(cls):
-        return cls.GENERATOR
+    # # Returns the multiplicative generator of `char()` - 1 order.
+    # def multiplicative_generator(cls):
+    #     return cls.GENERATOR
 
-    # Returns the root of unity of order n, if one exists.
-    # If no small multiplicative subgroup is defined, this is the 2-adic root of unity of order n
-    # (for n a power of 2).
-    def get_root_of_unity(self,n):
-        size = 2 ** (n.bit_length()-1)
-        log_size_of_group = int(math.log2(size))
+    # # Returns the root of unity of order n, if one exists.
+    # # If no small multiplicative subgroup is defined, this is the 2-adic root of unity of order n
+    # # (for n a power of 2).
+    # def get_root_of_unity(self,n):
+    #     size = 2 ** (n.bit_length()-1)
+    #     log_size_of_group = int(math.log2(size))
 
-        if n != size or log_size_of_group > self.TWO_ADICITY:
-            return None
+    #     if n != size or log_size_of_group > self.TWO_ADICITY:
+    #         return None
 
-        # Compute the generator for the multiplicative subgroup.
-        # It should be 2^(log_size_of_group) root of unity.
-        omega = self.two_adic_root_of_unity()
-        R_inv=gmpy2.invert(self.R,self.MODULUS)
-        for _ in range(log_size_of_group, self.TWO_ADICITY):
-            #modsquare
-            omega *=omega
-            omega *=R_inv
-            omega %=self.MODULUS
-        return omega
+    #     # Compute the generator for the multiplicative subgroup.
+    #     # It should be 2^(log_size_of_group) root of unity.
+    #     omega = self.two_adic_root_of_unity()
+    #     R_inv=gmpy2.invert(self.R,self.MODULUS)
+    #     for _ in range(log_size_of_group, self.TWO_ADICITY):
+    #         #modsquare
+    #         omega *=omega
+    #         omega *=R_inv
+    #         omega %=self.MODULUS
+    #     return omega
 
 FQ_ONE = gmpy2.mpz(1)
 FQ_ZERO = gmpy2.mpz(0)

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Tuple
 from domain import Radix2EvaluationDomain
-from field import field
+from bls12_381 import fr
 from plonk_core.src.proof_system.prover_key import Prover_Key
 from plonk_core.src.proof_system.widget.mod import WitnessValues
 from plonk_core.src.proof_system.mod import CustomEvaluations
@@ -15,58 +15,58 @@ from arithmetic import poly_mul_const,poly_add_poly,evaluate,compute_first_lagra
 @dataclass
 class WireEvaluations:
     # Evaluation of the witness polynomial for the left wire at `z`.
-    a_eval: field
+    a_eval: fr.Fr
 
     # Evaluation of the witness polynomial for the right wire at `z`.
-    b_eval: field
+    b_eval: fr.Fr
 
     # Evaluation of the witness polynomial for the output wire at `z`.
-    c_eval: field
+    c_eval: fr.Fr
 
     # Evaluation of the witness polynomial for the fourth wire at `z`.
-    d_eval: field
+    d_eval: fr.Fr
 
 @dataclass
 class PermutationEvaluations:
     # Evaluation of the left sigma polynomial at `z`.
-    left_sigma_eval: field
+    left_sigma_eval: fr.Fr
 
     # Evaluation of the right sigma polynomial at `z`.
-    right_sigma_eval: field
+    right_sigma_eval: fr.Fr
 
     # Evaluation of the out sigma polynomial at `z`.
-    out_sigma_eval: field
+    out_sigma_eval: fr.Fr
 
     # Evaluation of the permutation polynomial at `z * omega` where `omega`
     # is a root of unity.
-    permutation_eval: field
+    permutation_eval: fr.Fr
 
 @dataclass 
 class LookupEvaluations:
-    q_lookup_eval: field
+    q_lookup_eval: fr.Fr
 
     # (Shifted) Evaluation of the lookup permutation polynomial at `z * root of unity`
-    z2_next_eval: field
+    z2_next_eval: fr.Fr
 
     # Evaluations of the first half of sorted plonkup poly at `z`
-    h1_eval: field
+    h1_eval: fr.Fr
 
     # (Shifted) Evaluations of the even indexed half of sorted plonkup poly
     # at `z root of unity
-    h1_next_eval: field
+    h1_next_eval: fr.Fr
 
     # Evaluations of the odd indexed half of sorted plonkup poly at `z
     # root of unity
-    h2_eval: field
+    h2_eval: fr.Fr
 
     # Evaluations of the query polynomial at `z`
-    f_eval: field
+    f_eval: fr.Fr
 
     # Evaluations of the table polynomial at `z`
-    table_eval: field
+    table_eval: fr.Fr
 
     # Evaluations of the table polynomial at `z * root of unity`
-    table_next_eval: field
+    table_next_eval: fr.Fr
 
 @dataclass 
 class ProofEvaluations:
@@ -86,36 +86,36 @@ class ProofEvaluations:
 def compute(
     domain: Radix2EvaluationDomain,
     prover_key: Prover_Key,
-    alpha: field,
-    beta: field,
-    gamma: field,
-    delta: field,
-    epsilon: field,
-    zeta: field,
-    range_separation_challenge: field,
-    logic_separation_challenge: field,
-    fixed_base_separation_challenge: field,
-    var_base_separation_challenge: field,
-    lookup_separation_challenge: field,
-    z_challenge: field,
-    w_l_poly: List[field],
-    w_r_poly: List[field],
-    w_o_poly: List[field],
-    w_4_poly: List[field],
-    t_1_poly: List[field],
-    t_2_poly: List[field],
-    t_3_poly: List[field],
-    t_4_poly: List[field],
-    t_5_poly: List[field],
-    t_6_poly: List[field],
-    t_7_poly: List[field],
-    t_8_poly: List[field],
-    z_poly: List[field],
-    z2_poly: List[field],
-    f_poly: List[field],
-    h1_poly: List[field],
-    h2_poly: List[field],
-    table_poly: List[field]
+    alpha: fr.Fr,
+    beta: fr.Fr,
+    gamma: fr.Fr,
+    delta: fr.Fr,
+    epsilon: fr.Fr,
+    zeta: fr.Fr,
+    range_separation_challenge: fr.Fr,
+    logic_separation_challenge: fr.Fr,
+    fixed_base_separation_challenge: fr.Fr,
+    var_base_separation_challenge: fr.Fr,
+    lookup_separation_challenge: fr.Fr,
+    z_challenge: fr.Fr,
+    w_l_poly: List[fr.Fr],
+    w_r_poly: List[fr.Fr],
+    w_o_poly: List[fr.Fr],
+    w_4_poly: List[fr.Fr],
+    t_1_poly: List[fr.Fr],
+    t_2_poly: List[fr.Fr],
+    t_3_poly: List[fr.Fr],
+    t_4_poly: List[fr.Fr],
+    t_5_poly: List[fr.Fr],
+    t_6_poly: List[fr.Fr],
+    t_7_poly: List[fr.Fr],
+    t_8_poly: List[fr.Fr],
+    z_poly: List[fr.Fr],
+    z2_poly: List[fr.Fr],
+    f_poly: List[fr.Fr],
+    h1_poly: List[fr.Fr],
+    h2_poly: List[fr.Fr],
+    table_poly: List[fr.Fr]
     ):
     n = domain.size
     omega = domain.group_gen
@@ -289,12 +289,12 @@ def compute(
 
 # Computes the gate constraint satisfiability portion of the linearisation polynomial.
 def compute_gate_constraint_satisfiability(
-    range_separation_challenge: field,
-    logic_separation_challenge: field,
-    fixed_base_separation_challenge: field,
-    var_base_separation_challenge: field,
+    range_separation_challenge: fr.Fr,
+    logic_separation_challenge: fr.Fr,
+    fixed_base_separation_challenge: fr.Fr,
+    var_base_separation_challenge: fr.Fr,
     wire_evals: WireEvaluations,
-    q_arith_eval: field,
+    q_arith_eval: fr.Fr,
     custom_evals: CustomEvaluations,
     prover_key: Prover_Key,
 ):

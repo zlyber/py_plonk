@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import List
-from field import field
+from bls12_381 import fq
+import gmpy2
 from transcript import flags
 @dataclass
 class G2Coordinate:
@@ -9,8 +10,8 @@ class G2Coordinate:
 
 @dataclass
 class AffinePointG1:
-    x: field
-    y: field
+    x: fq.Fq
+    y: fq.Fq
 
     @classmethod
     def new(cls,x,y):
@@ -18,8 +19,8 @@ class AffinePointG1:
 
     #Returns the point at infinity, which always has Z = 0.
     @classmethod
-    def zero(cls,params):
-        x=field.zero(params)
+    def zero(cls):
+        x=fq.Fq.zero()
         y=x.one()
         return cls(x,y)
     
@@ -30,7 +31,7 @@ class AffinePointG1:
     def serialize(self,writer):
         if self.is_zero():
             flag = flags.SWFlags.infinity()
-            zero = field.zero(self.x.params)
+            zero = fq.Fq.zero()
             writer = zero.serialize_with_flags(writer,flag)
             return writer
         else:

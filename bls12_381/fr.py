@@ -1,18 +1,19 @@
-from dataclasses import dataclass
 import gmpy2
 import math
+from field import field
+from transcript import flags
+from serialize import buffer_byte_size
+from bytes import read
+class Fr(field):
+    def __init__(self, value:gmpy2.mpz):
+        self.value = value
 
-@dataclass
-class FftParameters:
     TWO_ADICITY: int = 32
 
     TWO_ADIC_ROOT_OF_UNITY: gmpy2.mpz = gmpy2.mpz(
         "0x5bf3adda19e9b27b0af53ae352a31e645b1b4c801819d7ecb9b58d8c5f0e466a", 16
 
     )
-
-@dataclass
-class FpParameters:
 
     MODULUS: gmpy2.mpz = gmpy2.mpz(
         52435875175126190479447740508185965837690552500527637822603658699938581184513
@@ -52,47 +53,48 @@ class FpParameters:
         6104339283789297388802252303364915521546564123189034618274734669823
     )
 
-@dataclass
-class FrParameters(FftParameters,FpParameters):
     #256bits
     BYTE_SIZE:int = 32
-    # Return the Multiplicative identity
-    def one(cls):
-        return cls.R
     
-    # Returns the 2^s root of unity.
-    def two_adic_root_of_unity(self):
-        return self.TWO_ADIC_ROOT_OF_UNITY 
+def deserialize(params,reader):
+    output_byte_size = buffer_byte_size(params.MODULUS_BITS + flags.EmptyFlags.BIT_SIZE)
 
-    # Returns the 2^s * small_subgroup_base^small_subgroup_base_adicity root of unity
-    # if a small subgroup is defined.
-    def large_subgroup_root_of_unity():
-        pass
+    masked_bytes = bytearray([0] * (params.BYTE_SIZE + 1))
+    masked_bytes[:output_byte_size] = reader[:output_byte_size]
 
-    # Returns the multiplicative generator of `char()` - 1 order.
-    def multiplicative_generator(cls):
-        return cls.GENERATOR
+    flag = flags.EmptyFlags.from_u8_remove_flags(masked_bytes[output_byte_size - 1])
 
-    # Returns the root of unity of order n, if one exists.
-    # If no small multiplicative subgroup is defined, this is the 2-adic root of unity of order n
-    # (for n a power of 2).
-    def get_root_of_unity(self,n):
-        size = 2 ** (n.bit_length()-1)
-        log_size_of_group = int(math.log2(size))
+    element = read(masked_bytes,params)
+    field_element = Fr.from_repr(element)
+    return field_element, flag
 
-        if n != size or log_size_of_group > self.TWO_ADICITY:
-            return None
+    
+def from_random_bytes(params, bytes: bytes):
+    limbs = (len(bytes) + 1) // 8
+    if flags.EmptyFlags.BIT_SIZE > 8:
+        return None
 
-        # Compute the generator for the multiplicative subgroup.
-        # It should be 2^(log_size_of_group) root of unity.
-        omega = self.two_adic_root_of_unity()
-        R_inv=gmpy2.invert(self.R,self.MODULUS)
-        for _ in range(log_size_of_group, self.TWO_ADICITY):
-            #modsquare
-            omega *=omega
-            omega *=R_inv
-            omega %=self.MODULUS
-        return omega
+    result_bytes = bytearray([0] * (limbs * 8 + 1))
+    result_bytes[:len(bytes)] = bytes
+    last_bytes_mask = bytearray(9)
+    last_limb_mask = ((2 ** 64 - 1)>>params.REPR_SHAVE_BITS).to_bytes(8, byteorder='little')
+    last_bytes_mask[:8] = last_limb_mask[:]
+    output_byte_size = buffer_byte_size(params.MODULUS_BITS + flags.EmptyFlags.BIT_SIZE)
+    flag_location = output_byte_size - 1
+    flag_location_in_last_limb = flag_location - (8 * (limbs - 1))
 
+    last_bytes = result_bytes[8 * (limbs - 1):]
+
+    flags_mask = 0xFF >> (8 - flags.EmptyFlags.BIT_SIZE)
+    flag = 0
+    for i, (b, m) in enumerate(zip(last_bytes, last_bytes_mask)):
+        if i == flag_location_in_last_limb:
+            flag = b & flags_mask
+        b &= m
+
+    field_element,flag = deserialize(params,result_bytes[:limbs * 8])
+    #flags_obj = flags.SWFlags.from_u8(flag)
+
+    return field_element
 
 

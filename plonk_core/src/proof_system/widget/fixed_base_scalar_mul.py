@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from field import field
+from bls12_381 import fr
 from plonk_core.src.proof_system.mod import CustomEvaluations
 from plonk_core.src.proof_system.widget.mod import WitnessValues
 from bls12_381.edwards import EdwardsParameters as P
@@ -7,17 +7,17 @@ from arithmetic import poly_mul_const
 @dataclass
 class FBSMValues:
     # Left wire value in the next position
-    a_next_val: field
+    a_next_val: fr.Fr
     # Right wire value in the next position
-    b_next_val: field
+    b_next_val: fr.Fr
     # Fourth wire value in the next position
-    d_next_val: field
+    d_next_val: fr.Fr
     # Left selector value
-    q_l_val: field
+    q_l_val: fr.Fr
     # Right selector value
-    q_r_val: field
+    q_r_val: fr.Fr
     # Constant selector value
-    q_c_val: field
+    q_c_val: fr.Fr
 
     @staticmethod
     def from_evaluations(custom_evals:CustomEvaluations):
@@ -33,7 +33,7 @@ class FBSMValues:
     
 class FBSMGate:
     @staticmethod
-    def constraints(separation_challenge:field, wit_vals:WitnessValues, custom_vals:FBSMValues):
+    def constraints(separation_challenge:fr.Fr, wit_vals:WitnessValues, custom_vals:FBSMValues):
         kappa = separation_challenge.square()
         kappa_sq = kappa.square()
         kappa_cu = kappa_sq.mul(kappa)
@@ -101,7 +101,7 @@ class FBSMGate:
         return res
 
     @staticmethod
-    def quotient_term(selector: field, separation_challenge: field, 
+    def quotient_term(selector: fr.Fr, separation_challenge: fr.Fr, 
                       wit_vals: WitnessValues, custom_vals:FBSMValues):
         temp = FBSMGate.constraints(separation_challenge, wit_vals, custom_vals)
         res = selector.mul(temp)
@@ -113,14 +113,14 @@ class FBSMGate:
         res = poly_mul_const(selector_poly,temp)
         return res
 # Extracts the bit value from the accumulated bit.
-def extract_bit(curr_acc: field, next_acc: field):
+def extract_bit(curr_acc: fr.Fr, next_acc: fr.Fr):
     mid1 = next_acc.sub(curr_acc)
     res = mid1.sub(curr_acc)
     return res
 
 
 # Ensures that the bit is either `+1`, `-1`, or `0`.
-def check_bit_consistency(bit: field):
+def check_bit_consistency(bit: fr.Fr):
     one = bit.one()
     mid1 = bit.sub(one)
     mid2 = bit.add(one)

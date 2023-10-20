@@ -1,43 +1,41 @@
-from field import field
+from bls12_381 import fr
 from domain import Radix2EvaluationDomain
 from dataclasses import dataclass
 from typing import List, Tuple
-from plonk_core.lookup.multiset import MultiSet
 from plonk_core.src.utils import lc
 from arithmetic import poly_add_poly,poly_mul_const
 @dataclass
 class Lookup:
     # Lookup selector
-    q_lookup: Tuple[List[field],List[field]]
+    q_lookup: Tuple[List[fr.Fr],List[fr.Fr]]
     # Column 1 of lookup table
-    table_1: List[field]
+    table_1: List[fr.Fr]
     # Column 2 of lookup table
-    table_2: List[field]
+    table_2: List[fr.Fr]
     # Column 3 of lookup table
-    table_3: List[field]
+    table_3: List[fr.Fr]
     # Column 4 of lookup table
-    table_4: List[field]
+    table_4: List[fr.Fr]
 
     # Compute lookup portion of quotient polynomial
     def compute_lookup_quotient_term(self,
         domain: Radix2EvaluationDomain,
-        wl_eval_8n: List[field],
-        wr_eval_8n: List[field],
-        wo_eval_8n: List[field],
-        w4_eval_8n: List[field],
-        f_eval_8n: List[field],
-        table_eval_8n: List[field],
-        h1_eval_8n: List[field],
-        h2_eval_8n: List[field],
-        z2_eval_8n: List[field],
-        l1_eval_8n: List[field],
-        delta: field,
-        epsilon: field,
-        zeta: field,
-        lookup_sep:field):
+        wl_eval_8n: List[fr.Fr],
+        wr_eval_8n: List[fr.Fr],
+        wo_eval_8n: List[fr.Fr],
+        w4_eval_8n: List[fr.Fr],
+        f_eval_8n: List[fr.Fr],
+        table_eval_8n: List[fr.Fr],
+        h1_eval_8n: List[fr.Fr],
+        h2_eval_8n: List[fr.Fr],
+        z2_eval_8n: List[fr.Fr],
+        l1_eval_8n: List[fr.Fr],
+        delta: fr.Fr,
+        epsilon: fr.Fr,
+        zeta: fr.Fr,
+        lookup_sep:fr.Fr):
 
-        params = zeta.params
-        domain_8n:Radix2EvaluationDomain = Radix2EvaluationDomain.new(8 * domain.size,params)
+        domain_8n:Radix2EvaluationDomain = Radix2EvaluationDomain.new(8 * domain.size,zeta)
 
         # Initialize result list
         result = []
@@ -70,24 +68,24 @@ class Lookup:
     
     def compute_quotient_i(
         self,
-        index: field,
-        w_l_i: field,
-        w_r_i: field,
-        w_o_i: field,
-        w_4_i: field,
-        f_i: field,
-        table_i: field,
-        table_i_next: field,
-        h1_i: field,
-        h1_i_next: field,
-        h2_i: field,
-        z2_i: field,
-        z2_i_next: field,
-        l1_i: field,
-        delta: field,
-        epsilon: field,
-        zeta: field,
-        lookup_sep: field
+        index: fr.Fr,
+        w_l_i: fr.Fr,
+        w_r_i: fr.Fr,
+        w_o_i: fr.Fr,
+        w_4_i: fr.Fr,
+        f_i: fr.Fr,
+        table_i: fr.Fr,
+        table_i_next: fr.Fr,
+        h1_i: fr.Fr,
+        h1_i_next: fr.Fr,
+        h2_i: fr.Fr,
+        z2_i: fr.Fr,
+        z2_i_next: fr.Fr,
+        l1_i: fr.Fr,
+        delta: fr.Fr,
+        epsilon: fr.Fr,
+        zeta: fr.Fr,
+        lookup_sep: fr.Fr
     ):
         # q_lookup(X) * (a(X) + zeta * b(X) + (zeta^2 * c(X)) + (zeta^3 * d(X)
         # - f(X))) * α_1
@@ -137,23 +135,23 @@ class Lookup:
     
     def compute_linearisation(
         self,
-        l1_eval: field,
-        a_eval: field,
-        b_eval: field,
-        c_eval: field,
-        d_eval: field,
-        f_eval: field,
-        table_eval: field,
-        table_next_eval: field,
-        h1_next_eval: field,
-        h2_eval: field,
-        z2_next_eval: field,
-        delta: field,
-        epsilon: field,
-        zeta: field,
-        z2_poly: list[field],
-        h1_poly: list[field],
-        lookup_sep: field
+        l1_eval: fr.Fr,
+        a_eval: fr.Fr,
+        b_eval: fr.Fr,
+        c_eval: fr.Fr,
+        d_eval: fr.Fr,
+        f_eval: fr.Fr,
+        table_eval: fr.Fr,
+        table_next_eval: fr.Fr,
+        h1_next_eval: fr.Fr,
+        h2_eval: fr.Fr,
+        z2_next_eval: fr.Fr,
+        delta: fr.Fr,
+        epsilon: fr.Fr,
+        zeta: fr.Fr,
+        z2_poly: list[fr.Fr],
+        h1_poly: list[fr.Fr],
+        lookup_sep: fr.Fr
     ):
         one = delta.one()
         lookup_sep_sq = lookup_sep.square()

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from field import field
+from bls12_381 import fr
 from typing import List, Tuple
 from domain import Radix2EvaluationDomain
 from arithmetic import poly_mul_const,poly_add_poly
@@ -7,25 +7,25 @@ from plonk_core.src.permutation.constants import K1,K2,K3
 @dataclass
 class Permutation:
     # Left Permutation
-    left_sigma: Tuple[List[field],List[field]]
+    left_sigma: Tuple[List[fr.Fr],List[fr.Fr]]
 
     # Right Permutation
-    right_sigma: Tuple[List[field],List[field]]
+    right_sigma: Tuple[List[fr.Fr],List[fr.Fr]]
 
     # Output Permutation
-    out_sigma: Tuple[List[field],List[field]]
+    out_sigma: Tuple[List[fr.Fr],List[fr.Fr]]
 
     # Fourth Permutation
-    fourth_sigma: Tuple[List[field],List[field]]
+    fourth_sigma: Tuple[List[fr.Fr],List[fr.Fr]]
 
     # Linear Evaluations
-    linear_evaluations: List[field]
+    linear_evaluations: List[fr.Fr]
 
     def compute_quotient_i(self, index,
-        w_l_i: field, w_r_i: field, w_o_i: field, w_4_i: field,
-        z_i: field, z_i_next: field,
-        alpha: field, l1_alpha_sq: field,
-        beta: field, gamma: field):
+        w_l_i: fr.Fr, w_r_i: fr.Fr, w_o_i: fr.Fr, w_4_i: fr.Fr,
+        z_i: fr.Fr, z_i_next: fr.Fr,
+        alpha: fr.Fr, l1_alpha_sq: fr.Fr,
+        beta: fr.Fr, gamma: fr.Fr):
 
         a = self.compute_quotient_identity_range_check_i(
             index, w_l_i, w_r_i, w_o_i, w_4_i, z_i, alpha, beta, gamma,
@@ -44,14 +44,14 @@ class Permutation:
     # k2 * X + gamma)(d(X) + beta * k3 * X + gamma)z(X) * alpha
     def compute_quotient_identity_range_check_i(
         self,index,
-        w_l_i: field,w_r_i: field,w_o_i: field,w_4_i: field,
-        z_i: field,alpha: field,beta: field,gamma: field,):
+        w_l_i: fr.Fr,w_r_i: fr.Fr,w_o_i: fr.Fr,w_4_i: fr.Fr,
+        z_i: fr.Fr,alpha: fr.Fr,beta: fr.Fr,gamma: fr.Fr,):
 
         x = self.linear_evaluations[index]
 
-        k1 = K1(beta.params)
-        k2 = K2(beta.params)
-        k3 = K3(beta.params)
+        k1 = K1()
+        k2 = K2()
+        k3 = K3()
         
         mid1_1 = beta.mul(x)
         mid1_2 = w_l_i.add(mid1_1)
@@ -85,14 +85,14 @@ class Permutation:
     # alpha
     def compute_quotient_copy_range_check_i(
         self,index,
-        w_l_i: field,
-        w_r_i: field,
-        w_o_i: field,
-        w_4_i: field,
-        z_i_next: field,
-        alpha: field,
-        beta: field,
-        gamma: field
+        w_l_i: fr.Fr,
+        w_r_i: fr.Fr,
+        w_o_i: fr.Fr,
+        w_4_i: fr.Fr,
+        z_i_next: fr.Fr,
+        alpha: fr.Fr,
+        beta: fr.Fr,
+        gamma: fr.Fr
     ):
         left_sigma_eval = self.left_sigma[1][index]
         right_sigma_eval = self.right_sigma[1][index]
@@ -126,7 +126,7 @@ class Permutation:
 
     # Computes the following:
     # L_1(X)[Z(X) - 1]
-    def compute_quotient_term_check_one_i(self, z_i: field, l1_alpha_sq: field):
+    def compute_quotient_term_check_one_i(self, z_i: fr.Fr, l1_alpha_sq: fr.Fr):
         one = z_i.one()
         z_i_sub_one = z_i.sub(one)
         res = z_i_sub_one.mul(l1_alpha_sq)
@@ -136,10 +136,10 @@ class Permutation:
     def compute_linearisation(
         self, 
         n, 
-        z_challenge: field, 
-        challengTuple: Tuple[field,field,field], 
-        wireTuple: Tuple[field,field,field,field], 
-        sigmaTuple: Tuple[field,field,field], 
+        z_challenge: fr.Fr, 
+        challengTuple: Tuple[fr.Fr,fr.Fr,fr.Fr], 
+        wireTuple: Tuple[fr.Fr,fr.Fr,fr.Fr,fr.Fr], 
+        sigmaTuple: Tuple[fr.Fr,fr.Fr,fr.Fr], 
         z_eval, z_poly):
         a = self.compute_lineariser_identity_range_check(
             wireTuple[0],wireTuple[1],wireTuple[2],wireTuple[3],
@@ -156,7 +156,7 @@ class Permutation:
             self.fourth_sigma[0]
         )
 
-        domain = Radix2EvaluationDomain.new(n,z_challenge.params)
+        domain = Radix2EvaluationDomain.new(n,z_challenge)
         alpha2 = challengTuple[0].square()
         c = self.compute_lineariser_check_is_one(
             domain,
@@ -173,13 +173,13 @@ class Permutation:
     # (c_eval + beta * sigma_3 + gamma) * beta *z_eval * alpha^2 * Sigma_4(X)
     def compute_lineariser_copy_range_check(
         self,
-        a_eval: field, b_eval: field, c_eval: field,
-        z_eval: field,
-        sigma_1_eval: field,
-        sigma_2_eval: field,
-        sigma_3_eval: field,
-        alpha: field, beta: field, gamma: field,
-        fourth_sigma_poly: List[field],
+        a_eval: fr.Fr, b_eval: fr.Fr, c_eval: fr.Fr,
+        z_eval: fr.Fr,
+        sigma_1_eval: fr.Fr,
+        sigma_2_eval: fr.Fr,
+        sigma_3_eval: fr.Fr,
+        alpha: fr.Fr, beta: fr.Fr, gamma: fr.Fr,
+        fourth_sigma_poly: List[fr.Fr],
     ):
         # a_eval + beta * sigma_1 + gamma
         beta_sigma_1 = beta.mul(sigma_1_eval)
@@ -211,10 +211,10 @@ class Permutation:
     # gamma)(c_eval + beta * K2 * z_challenge + gamma) * alpha z(X)
     def compute_lineariser_identity_range_check(
         self,
-        a_eval: field, b_eval: field, c_eval: field, d_eval: field,
-        z_challenge: field,
-        alpha: field, beta: field, gamma: field,
-        z_poly: List[field]
+        a_eval: fr.Fr, b_eval: fr.Fr, c_eval: fr.Fr, d_eval: fr.Fr,
+        z_challenge: fr.Fr,
+        alpha: fr.Fr, beta: fr.Fr, gamma: fr.Fr,
+        z_poly: List[fr.Fr]
     ):
         beta_z = beta.mul(z_challenge)
 
@@ -223,17 +223,17 @@ class Permutation:
         a_0 = a_0.add(gamma)
 
         # b_eval + beta * K1 * z_challenge + gamma
-        beta_z_k1 = K1(beta.params).mul(beta_z)
+        beta_z_k1 = K1().mul(beta_z)
         a_1 = b_eval.add(beta_z_k1)
         a_1 = a_1.add(gamma)
 
         # c_eval + beta * K2 * z_challenge + gamma
-        beta_z_k2 = K2(beta.params).mul(beta_z)
+        beta_z_k2 = K2().mul(beta_z)
         a_2 = c_eval.add(beta_z_k2)
         a_2 = a_2.add(gamma)
 
         # d_eval + beta * K3 * z_challenge + gamma
-        beta_z_k3 = K3(beta.params).mul(beta_z)
+        beta_z_k3 = K3().mul(beta_z)
         a_3 = d_eval.add(beta_z_k3)
         a_3 = a_3.add(gamma)
 
@@ -247,9 +247,9 @@ class Permutation:
     def compute_lineariser_check_is_one(
         self, 
         domain: Radix2EvaluationDomain, 
-        z_challenge: field, 
-        alpha_sq: field, 
-        z_coeffs: List[field]):
+        z_challenge: fr.Fr, 
+        alpha_sq: fr.Fr, 
+        z_coeffs: List[fr.Fr]):
 
         lagrange_coefficients = domain.evaluate_all_lagrange_coefficients(z_challenge)
         l_1_z = lagrange_coefficients[0]

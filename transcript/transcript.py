@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from transcript import strobe
 from structure import AffinePointG1
-from field import from_random_bytes
+from bls12_381 import fr
 import struct
 
 MERLIN_PROTOCOL_LABEL = b"Merlin v1.0"
@@ -56,5 +56,5 @@ class Transcript:
         size = params.MODULUS_BITS // 8
         buf = bytes([0] * size)
         modified_buf = self.challenge_bytes(label, buf)
-        c_s = from_random_bytes(params,modified_buf)
+        c_s = fr.from_random_bytes(params,modified_buf)
         return c_s

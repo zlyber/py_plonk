@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List
 from plonk_core.src import utils
 from collections import defaultdict
-from field import field
+from bls12_381 import fr
 import gmpy2
 @dataclass
 class MultiSet:
@@ -47,7 +47,7 @@ class MultiSet:
         odds = []
         parity =0
         for key, value in counters.items():
-            key = field(key,self.elements[0].params)
+            key = fr.Fr(value=key)
             half_count = value//2
             evens.extend([key for _ in range(half_count)])
             odds.extend([key for _ in range(half_count)])

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from field import field
+from bls12_381 import fr
 from typing import List, Tuple
 from plonk_core.src.proof_system.widget.mod import WitnessValues
 from plonk_core.src.constraint_system.hash import SBOX_ALPHA
@@ -49,11 +49,11 @@ class Arith:
     # polynomial at the given evaluation points.
     def compute_linearisation(
         self, 
-        a_eval: field,
-        b_eval: field, 
-        c_eval: field, 
-        d_eval: field, 
-        q_arith_eval: field):
+        a_eval: fr.Fr,
+        b_eval: fr.Fr, 
+        c_eval: fr.Fr, 
+        d_eval: fr.Fr, 
+        q_arith_eval: fr.Fr):
         mid1_1 = a_eval.mul(b_eval)
         mid1 = poly_mul_const(self.q_m[0] ,mid1_1)
         mid2 = poly_mul_const(self.q_l[0] ,a_eval)

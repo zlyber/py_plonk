@@ -1,10 +1,10 @@
-from field import field
+from bls12_381 import fr
 from plonk_core.src.proof_system.mod import CustomEvaluations
 from plonk_core.src.proof_system.widget.mod import WitnessValues,delta
 from arithmetic import poly_mul_const
 
 class RangeValues:
-    def __init__(self, d_next_val:field):
+    def __init__(self, d_next_val:fr.Fr):
         self.d_next_val = d_next_val
         
     @staticmethod
@@ -15,8 +15,8 @@ class RangeValues:
 class RangeGate:
 
     @staticmethod
-    def constraints(separation_challenge:field, wit_vals:WitnessValues, custom_vals:RangeValues):
-        four = field.from_repr(4,separation_challenge.params)
+    def constraints(separation_challenge:fr.Fr, wit_vals:WitnessValues, custom_vals:RangeValues):
+        four = fr.Fr.from_repr(4)
         kappa = separation_challenge.square()
         kappa_sq = kappa.square()
         kappa_cu = kappa_sq.mul(kappa)

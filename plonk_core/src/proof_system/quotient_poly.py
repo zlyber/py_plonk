@@ -1,6 +1,7 @@
 from domain import Radix2EvaluationDomain
-from field import field
-from arithmetic import NTT,INTT,coset_NTT,coset_INTT,from_coeff_vec
+import gmpy2
+from bls12_381 import fr
+from arithmetic import INTT,coset_NTT,coset_INTT,from_coeff_vec
 from plonk_core.src.proof_system.widget.mod import WitnessValues
 from plonk_core.src.proof_system.widget.range import RangeGate,RangeValues
 from plonk_core.src.proof_system.widget.logic import LogicGate,LogicValues
@@ -9,8 +10,8 @@ from plonk_core.src.proof_system.widget.curve_addition import CAGate,CAValues
 from plonk_core.src.proof_system.mod import CustomEvaluations
 
 # Computes the first lagrange polynomial with the given `scale` over `domain`.
-def compute_first_lagrange_poly_scaled(domain: Radix2EvaluationDomain,scale:field):
-    x_evals = [field.zero(scale.params) for _ in range(domain.size)]
+def compute_first_lagrange_poly_scaled(domain: Radix2EvaluationDomain,scale: fr.Fr):
+    x_evals = [fr.Fr.zero() for _ in range(domain.size)]
     x_evals[0] = scale
     x_coeffs = INTT(domain,x_evals)
     result_poly = from_coeff_vec(x_coeffs)
@@ -22,10 +23,10 @@ def compute_gate_constraint_satisfiability(domain,
     wo_eval_8n, w4_eval_8n, pi_poly):
 
     #get Fr
-    params = range_challenge.params
+    params = fr.Fr(gmpy2.mpz(0))
     domain_8n = Radix2EvaluationDomain.new(8 * domain.size,params)
 
-    pi_eval_8n = coset_NTT(pi_poly,domain_8n,params)
+    pi_eval_8n = coset_NTT(pi_poly,domain_8n)
 
     gate_contributions = []
 
@@ -90,19 +91,19 @@ def compute_gate_constraint_satisfiability(domain,
 def compute_permutation_checks(
     domain:Radix2EvaluationDomain,
     prover_key,
-    wl_eval_8n: list[field], wr_eval_8n: list[field],
-    wo_eval_8n: list[field], w4_eval_8n: list[field],
-    z_eval_8n: list[field], alpha: field, beta: field, gamma: field):
+    wl_eval_8n: list[fr.Fr], wr_eval_8n: list[fr.Fr],
+    wo_eval_8n: list[fr.Fr], w4_eval_8n: list[fr.Fr],
+    z_eval_8n: list[fr.Fr], alpha: fr.Fr, beta: fr.Fr, gamma: fr.Fr):
 
     #get Fr
-    params = alpha.params
+    params = fr.Fr(gmpy2.mpz(0))
     #get NTT domain
     domain_8n:Radix2EvaluationDomain = Radix2EvaluationDomain.new(8 * domain.size,params)
 
     # Calculate l1_poly_alpha and l1_alpha_sq_evals
     alpha2 = alpha.square()
     l1_poly_alpha = compute_first_lagrange_poly_scaled(domain, alpha2)
-    l1_alpha_sq_evals = coset_NTT(l1_poly_alpha, domain_8n,params)
+    l1_alpha_sq_evals = coset_NTT(l1_poly_alpha, domain_8n)
 
     # Initialize result list
     result = []
@@ -132,45 +133,45 @@ def compute(domain: Radix2EvaluationDomain,
             w_l_poly, w_r_poly, w_o_poly, w_4_poly, 
             public_inputs_poly, 
             f_poly, table_poly, h1_poly, h2_poly, 
-            alpha:field, beta, gamma, delta, epsilon, zeta, 
+            alpha: fr.Fr, beta, gamma, delta, epsilon, zeta, 
             range_challenge, logic_challenge, 
             fixed_base_challenge, var_base_challenge, 
             lookup_challenge):
     
     #get Fr
-    params = alpha.params
+    params = fr.Fr(gmpy2.mpz(0))
     #get NTT domain
     domain_8n = Radix2EvaluationDomain.new(8 * domain.size,params)
     
     l1_poly = compute_first_lagrange_poly_scaled(domain, alpha.one())
-    l1_eval_8n = coset_NTT(l1_poly,domain_8n,params)
+    l1_eval_8n = coset_NTT(l1_poly,domain_8n)
 
-    z_eval_8n = coset_NTT(z_poly,domain_8n,params)
+    z_eval_8n = coset_NTT(z_poly,domain_8n)
     z_eval_8n += z_eval_8n[:8]
 
-    wl_eval_8n = coset_NTT(w_l_poly,domain_8n,params)
+    wl_eval_8n = coset_NTT(w_l_poly,domain_8n)
     wl_eval_8n += wl_eval_8n[:8]
 
-    wr_eval_8n = coset_NTT(w_r_poly,domain_8n,params)
+    wr_eval_8n = coset_NTT(w_r_poly,domain_8n)
     wr_eval_8n += wr_eval_8n[:8]
 
-    wo_eval_8n = coset_NTT(w_o_poly,domain_8n,params)
+    wo_eval_8n = coset_NTT(w_o_poly,domain_8n)
 
-    w4_eval_8n = coset_NTT(w_4_poly,domain_8n,params)
+    w4_eval_8n = coset_NTT(w_4_poly,domain_8n)
     w4_eval_8n += w4_eval_8n[:8]
 
-    z2_eval_8n = coset_NTT(z2_poly,domain_8n,params)
+    z2_eval_8n = coset_NTT(z2_poly,domain_8n)
     z2_eval_8n +=z2_eval_8n[:8]
 
-    f_eval_8n = coset_NTT(f_poly,domain_8n,params)
+    f_eval_8n = coset_NTT(f_poly,domain_8n)
 
-    table_eval_8n = coset_NTT(table_poly,domain_8n,params)
+    table_eval_8n = coset_NTT(table_poly,domain_8n)
     table_eval_8n += table_eval_8n[:8]
 
-    h1_eval_8n = coset_NTT(h1_poly,domain_8n,params)
+    h1_eval_8n = coset_NTT(h1_poly,domain_8n)
     h1_eval_8n += h1_eval_8n[:8]
 
-    h2_eval_8n = coset_NTT(h2_poly,domain_8n,params)
+    h2_eval_8n = coset_NTT(h2_poly,domain_8n)
 
     gate_constraints = compute_gate_constraint_satisfiability(
         domain,
@@ -209,7 +210,7 @@ def compute(domain: Radix2EvaluationDomain,
     for i in range(domain_8n.size):
         numerator = gate_constraints[i].add(permutation[i])
         numerator = numerator.add(lookup[i])
-        denominator = field.inverse(prover_key.v_h_coset_8n[i],params)
+        denominator = fr.Fr.inverse(prover_key.v_h_coset_8n[i])
         res = numerator.mul(denominator)
         quotient.append(res)
 

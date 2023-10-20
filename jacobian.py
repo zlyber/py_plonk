@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from typing import List
-from field import field
 from structure import AffinePointG1
 from transcript import transcript
 import gmpy2
@@ -9,16 +8,16 @@ from bls12_381 import fq
 
 @dataclass
 class ProjectivePointG1:
-    x: field
-    y: field
-    z: field
+    x: fq.Fq
+    y: fq.Fq
+    z: fq.Fq
 
     @classmethod
     #Returns the point at infinity, which always has Z = 0.
-    def zero(cls,field_elemnt:field):
+    def zero(cls,field_elemnt:fq.Fq):
         x=field_elemnt.one()
         y=field_elemnt.one()
-        z=field.zero(field_elemnt)
+        z=fq.Fq.zero()
         return cls(x,y,z)
     
     def is_zero(self):
@@ -112,13 +111,13 @@ class ProjectivePointG1:
     def to_affine(p:'ProjectivePointG1'):
         one = p.z.one()
         if p.is_zero():
-            return AffinePointG1.zero(p.x.params)
+            return AffinePointG1.zero()
         elif p.z.value == one.value:
             # If Z is one, the point is already normalized.
             return AffinePointG1.new(p.x,p.y)
         else:
             # Z is nonzero, so it must have an inverse in a field.
-            zinv = field.inverse(p.z,p.z.params)
+            zinv = fq.Fq.inverse(p.z)
             zinv_squared = zinv.square()
 
             x = p.x.mul(zinv_squared)
@@ -157,7 +156,7 @@ class ProjectivePointG1:
         s2 = other.y.mul(self.z)
         s2 = s2.mul(z1z1)
 
-        if u1 == u2 and s1 == s2:
+        if u1.value == u2.value and s1.value == s2.value:
             # The two points are equal, so we double.
             res = self.double()
             return res
@@ -222,7 +221,7 @@ class ProjectivePointG1:
             # S2 = Y2*Z1*Z1Z1
             mid1 = other.y.mul(self.z)
             s2 = mid1.mul(z1z1)
-            if self.x.value == u2 and self.y.value == s2:
+            if self.x.value == u2.value and self.y.value == s2.value:
                 # The two points are equal, so we double.
                 res = self.double()
                 return res

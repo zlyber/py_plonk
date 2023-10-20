@@ -1,18 +1,19 @@
 from dataclasses import dataclass
 import gmpy2
 import math
+from field import field
+
+
+    
 
 @dataclass
-class FftParameters:
+class Fr(field):
     TWO_ADICITY: int = 32
 
     TWO_ADIC_ROOT_OF_UNITY: gmpy2.mpz = gmpy2.mpz(
         "0x4d6b87b1da259e207342261215ac260bb3524a6466112932aa9f02ab1d6124de", 16
 
     )
-
-@dataclass
-class FpParameters:
 
     MODULUS: gmpy2.mpz = gmpy2.mpz(
         6554484396890773809930967563523245729705921265872317281365359162392183254199
@@ -50,8 +51,6 @@ class FpParameters:
         1638621099222693452482741890880811432426480316468079320341339790598045813549
     )
 
-@dataclass
-class FrParameters(FftParameters,FpParameters):
     #256bits
     BYTE_SIZE:int = 32
     # Return the Multiplicative identity
